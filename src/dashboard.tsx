@@ -46,7 +46,7 @@ type GameState = {
 
 type SummaryResponse = Summary;
 type PlayersResponse = GameState;
-type PlayerRow = Player & { serverId: string };
+export type PlayerRow = Player & { serverId: string };
 
 type ThumbnailItem = {
   targetId: number;
@@ -55,7 +55,7 @@ type ThumbnailItem = {
   version: string;
 };
 
-type ThumbnailResponse = {
+export type ThumbnailResponse = {
   data: ThumbnailItem[];
 };
 
