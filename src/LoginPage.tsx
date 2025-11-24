@@ -24,7 +24,7 @@ const LoginPage: React.FC<{ apiBase: string }> = ({ apiBase }) => {
           boxShadow: "0 10px 30px rgba(0,0,0,0.35)",
         }}
       >
-        <h1 style={{ marginTop: 0, marginBottom: "12px" }}>Net Control Center</h1>
+        <h1 style={{ marginTop: 0, marginBottom: "12px" }}>NET Control Center</h1>
         <p style={{ marginTop: 0, marginBottom: "18px", color: "#7d8cab" }}>
           Please login with Roblox to continue.
         </p>
