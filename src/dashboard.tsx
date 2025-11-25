@@ -518,6 +518,20 @@ const MapView: React.FC<MapViewProps> = ({
   const [showSettings, setShowSettings] = useState(false);
   const [zoomToCursor, setZoomToCursor] = useState(true);
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
+  const zoomRef = useRef(zoom);
+
+  const centerOffsetFor = useCallback(
+    (z: number, width?: number, height?: number) => {
+      const w = width ?? viewportSize.width;
+      const h = height ?? viewportSize.height;
+      if (!w || !h) return { x: 0, y: 0 };
+      return {
+        x: (w - w * z) / 2,
+        y: (h - h * z) / 2,
+      };
+    },
+    [viewportSize.width, viewportSize.height]
+  );
 
   const zoomAtPoint = useCallback(
     (factor: number, origin?: { x: number; y: number }) => {
@@ -582,6 +596,15 @@ const MapView: React.FC<MapViewProps> = ({
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
+
+  useEffect(() => {
+    zoomRef.current = zoom;
+  }, [zoom]);
+
+  useEffect(() => {
+    if (!viewportSize.width || !viewportSize.height) return;
+    setOffset(centerOffsetFor(zoomRef.current, viewportSize.width, viewportSize.height));
+  }, [viewportSize.width, viewportSize.height, isFullscreen, centerOffsetFor]);
 
   useEffect(() => {
     const el = viewportRef.current;
@@ -752,7 +775,7 @@ const MapView: React.FC<MapViewProps> = ({
             <button
               onClick={() => {
                 setZoom(1);
-                setOffset({ x: 0, y: 0 });
+                setOffset(centerOffsetFor(1));
               }}
               title="Reset view"
             >
@@ -1028,6 +1051,7 @@ const globalStyles = `
   .map-wrapper {
     width: 100%;
     max-width: 100%;
+    height: 100%;
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -1038,6 +1062,7 @@ const globalStyles = `
   .map-container {
     width: 100%;
     max-width: 100%;
+    max-height: 100%;
     aspect-ratio: 15469 / 9504; /* Matches net-map.png dimensions */
     overflow: hidden;
     position: relative;
@@ -1239,7 +1264,7 @@ const globalStyles = `
 
   .map-fullscreen-inner .map-wrapper {
     height: 100%;
-    justify-content: flex-start;
+    justify-content: center;
   }
 
   .server-header {
