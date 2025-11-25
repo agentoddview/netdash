@@ -246,6 +246,30 @@ const DashboardPage: React.FC = () => {
     setDragging(true);
   };
 
+  const getStaffHighlight = (rank?: string | null): { color?: string; icon?: string } => {
+    if (!rank) return {};
+    const r = rank.toLowerCase();
+    if (r.includes("founder")) {
+      return { color: "#ef4444", icon: "👑" };
+    }
+    if (r.includes("chief of staff")) {
+      return { color: "#38bdf8", icon: "👔" };
+    }
+    if (r.includes("developer")) {
+      return { color: "#f97316", icon: "🔨" };
+    }
+    if (r.includes("lead supervisor")) {
+      return { color: "#22c55e", icon: "🛡" };
+    }
+    if (r.includes("senior supervisor")) {
+      return { color: "#22c55e", icon: "🛡" };
+    }
+    if (r.includes("supervisor")) {
+      return { color: "#22c55e", icon: "🛡" };
+    }
+    return {};
+  };
+
   useEffect(() => {
     if (!dragging) return;
     const onMove = (e: MouseEvent) => {
@@ -378,6 +402,9 @@ const DashboardPage: React.FC = () => {
                       {server.players && server.players.length > 0 ? (
                         server.players.map((player) => {
                           const isHighlighted = highlightedPlayerId === player.userId;
+                          const { color: usernameColor, icon: roleIcon } = getStaffHighlight(
+                            player.rank
+                          );
                           return (
                             <div
                               className={`player-row ${
@@ -403,7 +430,13 @@ const DashboardPage: React.FC = () => {
                                   target="_blank"
                                   rel="noreferrer"
                                   className="username-link"
+                                  style={usernameColor ? { color: usernameColor } : undefined}
                                 >
+                                  {roleIcon && (
+                                    <span className="role-icon" aria-hidden="true">
+                                      {roleIcon}
+                                    </span>
+                                  )}
                                   {player.username}
                                 </a>
                                 <p className="muted small">{player.displayName}</p>
@@ -1364,10 +1397,17 @@ const globalStyles = `
     color: var(--text);
     font-weight: 600;
     text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
   }
 
   .username-link:hover {
     text-decoration: underline;
+  }
+
+  .role-icon {
+    font-size: 0.9em;
   }
 
   .player-tags {
