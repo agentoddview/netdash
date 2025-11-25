@@ -713,61 +713,59 @@ const MapView: React.FC<MapViewProps> = ({
             }}
           >
             <img src={netMap} alt="Live map" className="map-image" draggable={false} />
-          </div>
-          <div className="map-overlay">
-            {!hasServers && (
-              <div className="muted small map-empty">No servers available.</div>
-            )}
-            {playersWithPos.map((player) => {
-              const mapX = player.position?.mapX ?? 0;
-              const mapY = player.position?.mapY ?? 0;
-              const x = mapX * viewportWidth * zoom + offset.x;
-              const y = mapY * viewportHeight * zoom + offset.y;
-              const isPassenger = player.role === "Passenger" || player.team === "Passenger";
-              return (
-                <div
-                  key={player.userId}
-                  className={`map-dot ${isPassenger ? "passenger" : ""} ${
-                    highlightedPlayerId === player.userId ? "selected" : ""
-                  }`}
-                  style={{
-                    left: `${x}px`,
-                    top: `${y}px`,
-                    width: `${dotSizePx}px`,
-                    height: `${dotSizePx}px`,
-                    background: isPassenger ? "#ffffff" : colorFor(player),
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDotClick(player);
-                  }}
-                  onMouseEnter={() => setHovered(player.userId)}
-                  onMouseLeave={() =>
-                    setHovered((prev) => (prev === player.userId ? null : prev))
-                  }
-                >
-                  {hovered === player.userId && (
-                    <div className="map-tooltip">
-                      <div className="tooltip-row">
-                        <span className="username-link">{player.username}</span>
-                        <span className="muted small">{player.displayName}</span>
+            <div className="map-overlay">
+              {!hasServers && (
+                <div className="muted small map-empty">No servers available.</div>
+              )}
+              {playersWithPos.map((player) => {
+                const mapX = player.position?.mapX ?? 0;
+                const mapY = player.position?.mapY ?? 0;
+                const isPassenger = player.role === "Passenger" || player.team === "Passenger";
+                return (
+                  <div
+                    key={player.userId}
+                    className={`map-dot ${isPassenger ? "passenger" : ""} ${
+                      highlightedPlayerId === player.userId ? "selected" : ""
+                    }`}
+                    style={{
+                      left: `${mapX * 100}%`,
+                      top: `${mapY * 100}%`,
+                      width: `${dotSizePx}px`,
+                      height: `${dotSizePx}px`,
+                      background: isPassenger ? "#ffffff" : colorFor(player),
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDotClick(player);
+                    }}
+                    onMouseEnter={() => setHovered(player.userId)}
+                    onMouseLeave={() =>
+                      setHovered((prev) => (prev === player.userId ? null : prev))
+                    }
+                  >
+                    {hovered === player.userId && (
+                      <div className="map-tooltip">
+                        <div className="tooltip-row">
+                          <span className="username-link">{player.username}</span>
+                          <span className="muted small">{player.displayName}</span>
+                        </div>
+                        <div className="tooltip-row">
+                          <span className="pill">{player.role || player.team || "-"}</span>
+                          <span className="pill">{player.rank ?? "-"}</span>
+                        </div>
+                        <div className="tooltip-row">
+                          <span className="pill">Miles {player.miles ?? 0}</span>
+                          <span className="pill">Cash {player.cash ?? 0}</span>
+                        </div>
                       </div>
-                      <div className="tooltip-row">
-                        <span className="pill">{player.role || player.team || "-"}</span>
-                        <span className="pill">{player.rank ?? "-"}</span>
-                      </div>
-                      <div className="tooltip-row">
-                        <span className="pill">Miles {player.miles ?? 0}</span>
-                        <span className="pill">Cash {player.cash ?? 0}</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-            {playersWithPos.length === 0 && hasServers && (
-              <div className="muted small map-empty">No player coordinates for this server.</div>
-            )}
+                    )}
+                  </div>
+                );
+              })}
+              {playersWithPos.length === 0 && hasServers && (
+                <div className="muted small map-empty">No player coordinates for this server.</div>
+              )}
+            </div>
           </div>
           <div className="map-controls">
             <button onClick={() => zoomAtPoint(ZOOM_FACTOR, { x: viewportWidth / 2, y: viewportHeight / 2 })}>+</button>
