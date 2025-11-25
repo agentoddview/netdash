@@ -545,8 +545,8 @@ const MapView: React.FC<MapViewProps> = ({
         if (nextZoom === prevZoom) return prevZoom;
 
         setOffset((prevOffset) => ({
-          x: prevOffset.x + (originX - originX * zoomRatio),
-          y: prevOffset.y + (originY - originY * zoomRatio),
+          x: originX - (originX - prevOffset.x) * zoomRatio,
+          y: originY - (originY - prevOffset.y) * zoomRatio,
         }));
 
         return nextZoom;
@@ -683,10 +683,10 @@ const MapView: React.FC<MapViewProps> = ({
           className="map-viewport"
           ref={viewportRef}
           onMouseDown={(e) => {
-            e.preventDefault();
             if (e.button !== 0) return;
             const target = e.target as HTMLElement;
             if (target.closest(".map-controls") || target.closest(".map-settings")) return;
+            e.preventDefault();
             setIsDragging(true);
             setDragStart({ x: e.clientX - offset.x, y: e.clientY - offset.y });
           }}
@@ -724,25 +724,32 @@ const MapView: React.FC<MapViewProps> = ({
                 return (
                   <div
                     key={player.userId}
-                    className={`map-dot ${isPassenger ? "passenger" : ""} ${
-                      highlightedPlayerId === player.userId ? "selected" : ""
-                    }`}
+                    className="map-dot-wrapper"
                     style={{
                       left: `${mapX * 100}%`,
                       top: `${mapY * 100}%`,
-                      width: `${dotSizePx}px`,
-                      height: `${dotSizePx}px`,
-                      background: isPassenger ? "#ffffff" : colorFor(player),
+                      transform: `translate(-50%, -50%) scale(${1 / zoom})`,
+                      transformOrigin: "center",
                     }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDotClick(player);
-                    }}
-                    onMouseEnter={() => setHovered(player.userId)}
-                    onMouseLeave={() =>
-                      setHovered((prev) => (prev === player.userId ? null : prev))
-                    }
                   >
+                    <div
+                      className={`map-dot ${isPassenger ? "passenger" : ""} ${
+                        highlightedPlayerId === player.userId ? "selected" : ""
+                      }`}
+                      style={{
+                        width: `${dotSizePx}px`,
+                        height: `${dotSizePx}px`,
+                        background: isPassenger ? "#ffffff" : colorFor(player),
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDotClick(player);
+                      }}
+                      onMouseEnter={() => setHovered(player.userId)}
+                      onMouseLeave={() =>
+                        setHovered((prev) => (prev === player.userId ? null : prev))
+                      }
+                    />
                     {hovered === player.userId && (
                       <div className="map-tooltip">
                         <div className="tooltip-row">
@@ -1116,6 +1123,11 @@ const globalStyles = `
     pointer-events: auto;
   }
 
+  .map-dot-wrapper {
+    position: absolute;
+    pointer-events: auto;
+  }
+
   .map-image {
     position: absolute;
     inset: 0;
@@ -1128,11 +1140,8 @@ const globalStyles = `
 
   .map-dot {
     position: absolute;
-    width: 12px;
-    height: 12px;
     border-radius: 50%;
     box-shadow: 0 0 8px rgba(0,0,0,0.5);
-    transform: translate(-50%, -50%);
     cursor: pointer;
     border: 1px solid #0b0f1e;
   }
@@ -1208,6 +1217,7 @@ const globalStyles = `
     right: 52px;
     top: 12px;
     z-index: 25;
+    pointer-events: auto;
     min-width: 180px;
     padding: 10px 12px;
     border-radius: 10px;
