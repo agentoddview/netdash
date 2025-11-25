@@ -595,7 +595,7 @@ const MapView: React.FC<MapViewProps> = ({
     const observer = new ResizeObserver(updateSize);
     observer.observe(el);
     return () => observer.disconnect();
-  }, []);
+  }, [isFullscreen]);
 
   useEffect(() => {
     zoomRef.current = zoom;
