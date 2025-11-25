@@ -746,66 +746,70 @@ const MapView: React.FC<MapViewProps> = ({
             }}
           >
             <img src={netMap} alt="Live map" className="map-image" draggable={false} />
-            <div className="map-overlay">
-              {!hasServers && (
-                <div className="muted small map-empty">No servers available.</div>
-              )}
-              {playersWithPos.map((player) => {
-                const mapX = player.position?.mapX ?? 0;
-                const mapY = player.position?.mapY ?? 0;
-                const isPassenger = player.role === "Passenger" || player.team === "Passenger";
-                return (
+          </div>
+          <div className="map-overlay">
+            {!hasServers && (
+              <div className="muted small map-empty">No servers available.</div>
+            )}
+            {playersWithPos.map((player) => {
+              const mapX = player.position?.mapX ?? 0;
+              const mapY = player.position?.mapY ?? 0;
+              const worldX = mapX * viewportWidth;
+              const worldY = mapY * viewportHeight;
+              const screenX = offset.x + worldX * zoom;
+              const screenY = offset.y + worldY * zoom;
+              const isPassenger = player.role === "Passenger" || player.team === "Passenger";
+              return (
+                <div
+                  key={player.userId}
+                  className="map-dot-wrapper"
+                  style={{
+                    left: `${screenX}px`,
+                    top: `${screenY}px`,
+                    transform: `translate(-50%, -50%)`,
+                    transformOrigin: "center",
+                  }}
+                >
                   <div
-                    key={player.userId}
-                    className="map-dot-wrapper"
+                    className={`map-dot ${isPassenger ? "passenger" : ""} ${
+                      highlightedPlayerId === player.userId ? "selected" : ""
+                    }`}
                     style={{
-                      left: `${mapX * 100}%`,
-                      top: `${mapY * 100}%`,
-                      transform: `translate(-50%, -50%) scale(${1 / zoom})`,
-                      transformOrigin: "center",
+                      width: `${dotSizePx}px`,
+                      height: `${dotSizePx}px`,
+                      background: isPassenger ? "#ffffff" : colorFor(player),
                     }}
-                  >
-                    <div
-                      className={`map-dot ${isPassenger ? "passenger" : ""} ${
-                        highlightedPlayerId === player.userId ? "selected" : ""
-                      }`}
-                      style={{
-                        width: `${dotSizePx}px`,
-                        height: `${dotSizePx}px`,
-                        background: isPassenger ? "#ffffff" : colorFor(player),
-                      }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDotClick(player);
-                      }}
-                      onMouseEnter={() => setHovered(player.userId)}
-                      onMouseLeave={() =>
-                        setHovered((prev) => (prev === player.userId ? null : prev))
-                      }
-                    />
-                    {hovered === player.userId && (
-                      <div className="map-tooltip">
-                        <div className="tooltip-row">
-                          <span className="username-link">{player.username}</span>
-                          <span className="muted small">{player.displayName}</span>
-                        </div>
-                        <div className="tooltip-row">
-                          <span className="pill">{player.role || player.team || "-"}</span>
-                          <span className="pill">{player.rank ?? "-"}</span>
-                        </div>
-                        <div className="tooltip-row">
-                          <span className="pill">Miles {player.miles ?? 0}</span>
-                          <span className="pill">Cash {player.cash ?? 0}</span>
-                        </div>
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDotClick(player);
+                    }}
+                    onMouseEnter={() => setHovered(player.userId)}
+                    onMouseLeave={() =>
+                      setHovered((prev) => (prev === player.userId ? null : prev))
+                    }
+                  />
+                  {hovered === player.userId && (
+                    <div className="map-tooltip">
+                      <div className="tooltip-row">
+                        <span className="username-link">{player.username}</span>
+                        <span className="muted small">{player.displayName}</span>
                       </div>
-                    )}
-                  </div>
-                );
-              })}
-              {playersWithPos.length === 0 && hasServers && (
-                <div className="muted small map-empty">No player coordinates for this server.</div>
-              )}
-            </div>
+                      <div className="tooltip-row">
+                        <span className="pill">{player.role || player.team || "-"}</span>
+                        <span className="pill">{player.rank ?? "-"}</span>
+                      </div>
+                      <div className="tooltip-row">
+                        <span className="pill">Miles {player.miles ?? 0}</span>
+                        <span className="pill">Cash {player.cash ?? 0}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            {playersWithPos.length === 0 && hasServers && (
+              <div className="muted small map-empty">No player coordinates for this server.</div>
+            )}
           </div>
           <div className="map-controls">
             <button onClick={() => zoomAtPoint(ZOOM_FACTOR, { x: viewportWidth / 2, y: viewportHeight / 2 })}>+</button>
@@ -1150,10 +1154,6 @@ const globalStyles = `
     position: absolute;
     inset: 0;
     pointer-events: none;
-  }
-
-  .map-overlay .map-dot {
-    pointer-events: auto;
   }
 
   .map-dot-wrapper {
