@@ -1,0 +1,688 @@
+const mapContent = (
+    <div className="map-container">
+      <div className="map-toolbar">
+        <label className="muted small" htmlFor="server-select">
+          Server
+        </label>
+        <select
+          id="server-select"
+          value={currentServer?.serverId || ""}
+          onChange={(e) => onSelect(e.target.value)}
+          className="map-select"
+        >
+          {servers.map((s) => (
+            <option key={s.serverId} value={s.serverId}>
+              {shortenServerId(s.serverId)}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="map-viewport" ref={viewportRef}>
+        <div
+          className="map-inner"
+          style={{
+            transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`,
+            transformOrigin: "center center",
+          }}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            setIsDragging(true);
+            setDragStart({ x: e.clientX - offset.x, y: e.clientY - offset.y });
+          }}
+          onMouseMove={(e) => {
+            if (!isDragging || !dragStart) return;
+            setOffset({
+              x: e.clientX - dragStart.x,
+              y: e.clientY - dragStart.y,
+            });
+          }}
+          onMouseUp={() => setIsDragging(false)}
+          onMouseLeave={() => setIsDragging(false)}
+          onClick={(e) => {
+            if (e.target === e.currentTarget && onSelectPlayer) {
+              onSelectPlayer(null);
+            }
+          }}
+        >
+          <img src={netMap} alt="Live map" className="map-image" draggable={false} />
+          {!hasServers && (
+            <div className="muted small map-empty">No servers available.</div>
+          )}
+          {playersWithPos.map((player) => {
+            const x = player.position?.mapX ?? 0;
+            const y = player.position?.mapY ?? 0;
+            const isPassenger = player.role === "Passenger" || player.team === "Passenger";
+            return (
+              <div
+                key={player.userId}
+                className={`map-dot ${isPassenger ? "passenger" : ""} ${
+                  highlightedPlayerId === player.userId ? "selected" : ""
+                }`}
+                style={{
+                  left: `${x * 100}%`,
+                  top: `${y * 100}%`,
+                  width: `${dotSizePx}px`,
+                  height: `${dotSizePx}px`,
+                  background: isPassenger ? "#ffffff" : colorFor(player),
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDotClick(player);
+                }}
+                onMouseEnter={() => setHovered(player.userId)}
+                onMouseLeave={() =>
+                  setHovered((prev) => (prev === player.userId ? null : prev))
+                }
+              >
+                {hovered === player.userId && (
+                  <div className="map-tooltip">
+                    <div className="tooltip-row">
+                      <span className="username-link">{player.username}</span>
+                      <span className="muted small">{player.displayName}</span>
+                    </div>
+                    <div className="tooltip-row">
+                      <span className="pill">{player.role || player.team || "-"}</span>
+                      <span className="pill">{player.rank ?? "-"}</span>
+                    </div>
+                    <div className="tooltip-row">
+                      <span className="pill">Miles {player.miles ?? 0}</span>
+                      <span className="pill">Cash {player.cash ?? 0}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          {playersWithPos.length === 0 && (
+            <div className="muted small map-empty">No player coordinates for this server.</div>
+          )}
+        </div>
+        <div className="map-controls">
+          <button onClick={() => setZoom((z) => Math.min(4, z + 0.2))}>+</button>
+          <button onClick={() => setZoom((z) => Math.max(0.5, z - 0.2))}>−</button>
+          <button
+            onClick={() => {
+              setZoom(1);
+              setOffset({ x: 0, y: 0 });
+            }}
+            title="Reset view"
+          >
+            ⟳
+          </button>
+          <button
+            onClick={onToggleFullscreen}
+            title={isFullscreen ? "Exit full screen" : "Full screen"}
+          >
+            ⛶
+          </button>
+          <button onClick={() => setShowSettings((v) => !v)} title="Map settings">
+            ⚙
+          </button>
+        </div>
+        {showSettings && (
+          <div className="map-settings">
+            <div className="map-settings-row">
+              <span>Dot size</span>
+              <select
+                value={dotSize}
+                onChange={(e) => setDotSize(e.target.value as DotSize)}
+              >
+                <option value="small">Small</option>
+                <option value="medium">Medium</option>
+                <option value="large">Large</option>
+              </select>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  if (isFullscreen) {
+    return (
+      <div className="map-fullscreen-overlay" onClick={onExitFullscreen}>
+        <div className="map-fullscreen-inner" onClick={(e) => e.stopPropagation()}>
+          {mapContent}
+        </div>
+      </div>
+    );
+  }
+
+  return mapContent;
+};
+
+const globalStyles = `
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+  :root {
+    --bg: radial-gradient(circle at 15% 20%, #162240 0, transparent 30%), radial-gradient(circle at 85% 0%, #1b2a4f 0, transparent 25%), #0b0f1e;
+    --panel: #11182d;
+    --panel-strong: #0c1225;
+    --text: #eaf0ff;
+    --muted: #7d8cab;
+    --border: #1f2740;
+    --accent-blue: linear-gradient(120deg, #2ca7ff, #4b7cff);
+    --accent-green: linear-gradient(120deg, #4ad295, #2ea17c);
+    --accent-purple: linear-gradient(120deg, #9b8cff, #6a6adf);
+    --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+
+  .dashboard {
+    min-height: 100vh;
+    padding: 32px clamp(16px, 3vw, 64px);
+    background: var(--bg);
+  }
+
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 12px;
+    color: var(--muted);
+    margin: 0 0 6px 0;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: clamp(28px, 4vw, 40px);
+    line-height: 1.1;
+  }
+
+  h2 {
+    margin: 0;
+    font-size: 18px;
+  }
+
+  h3 {
+    margin: 4px 0 2px 0;
+    font-size: 16px;
+  }
+
+  .status-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    box-shadow: var(--shadow);
+  }
+
+  .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: linear-gradient(120deg, #4ad295, #2ea17c);
+    box-shadow: 0 0 12px #2ea17c;
+  }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .content-grid {
+    display: grid;
+    grid-template-columns: minmax(240px, 0.35fr) 12px minmax(0, 0.65fr);
+    gap: 12px;
+    align-items: stretch;
+    position: relative;
+  }
+
+  .stat-card {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 12px;
+    align-items: center;
+    padding: 16px;
+    background: var(--panel);
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+  }
+
+  .stat-indicator {
+    width: 8px;
+    height: 56px;
+    border-radius: 6px;
+  }
+
+  .stat-value {
+    margin: 4px 0 0 0;
+    font-size: 24px;
+    font-weight: 600;
+  }
+
+  .panel {
+    background: linear-gradient(180deg, var(--panel), var(--panel-strong));
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+  }
+
+  .content-grid .panel {
+    margin-bottom: 0;
+    height: 100%;
+  }
+
+  .panel-servers {
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 260px);
+  }
+
+  .panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .muted {
+    color: var(--muted);
+    margin: 0;
+    font-size: 14px;
+  }
+
+  .role-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+  }
+
+  .role-card {
+    padding: 14px 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .role-name {
+    font-weight: 500;
+  }
+
+  .role-count {
+    font-size: 20px;
+    font-weight: 600;
+  }
+
+  .server-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+    flex: 1;
+  }
+
+  .server-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .server-card-selected {
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 1px rgba(76, 169, 255, 0.3), var(--shadow);
+  }
+
+  .map-panel {
+    min-height: calc(100vh - 260px);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .map-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1;
+    min-height: 100%;
+  }
+
+  .map-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .map-select {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+  }
+
+  .map-viewport {
+    position: relative;
+    flex: 1;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    background: #050814;
+    aspect-ratio: 16 / 9; /* TODO: update to match net-map.png */
+    height: auto;
+    overscroll-behavior: contain;
+  }
+
+  .map-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    cursor: grab;
+  }
+
+  .map-inner:active {
+    cursor: grabbing;
+  }
+
+  .map-image {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: fill;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .map-dot {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    box-shadow: 0 0 8px rgba(0,0,0,0.5);
+    transform: translate(-50%, -50%);
+    cursor: pointer;
+    border: 1px solid #0b0f1e;
+  }
+
+  .map-dot.passenger {
+    width: 12px;
+    height: 12px;
+    background: #ffffff !important;
+    border-color: #ffffff;
+    box-shadow: 0 0 0 rgba(0,0,0,0);
+  }
+
+  .map-tooltip {
+    position: absolute;
+    left: 14px;
+    top: 14px;
+    background: rgba(11, 15, 30, 0.92);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px;
+    min-width: 180px;
+    z-index: 2;
+    box-shadow: var(--shadow);
+  }
+
+  .tooltip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+
+  .map-empty {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: rgba(0,0,0,0.35);
+  }
+
+  .map-controls {
+    position: absolute;
+    right: 12px;
+    top: 12px;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .map-controls button {
+    width: 28px;
+    height: 28px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: rgba(10, 16, 40, 0.9);
+    color: #fff;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+
+  .map-dot.selected {
+    box-shadow: 0 0 0 2px #1d4ed8, 0 0 12px rgba(59,130,246,0.8);
+  }
+
+  .map-settings {
+    position: absolute;
+    right: 52px;
+    top: 12px;
+    z-index: 25;
+    min-width: 180px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(148,163,184,0.45);
+    background: rgba(15,23,42,0.98);
+    box-shadow: 0 18px 40px rgba(0,0,0,0.7);
+    font-size: 13px;
+  }
+
+  .map-settings-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .map-settings select {
+    background: #020617;
+    border-radius: 999px;
+    border: 1px solid rgba(148,163,184,0.6);
+    color: #e5e7eb;
+    padding: 4px 10px;
+    font-size: 13px;
+  }
+
+  .map-fullscreen-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+    background: radial-gradient(circle at top, rgba(15,23,42,0.95), rgba(2,6,23,0.98));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .map-fullscreen-inner {
+    width: min(96vw, 1600px);
+    height: min(90vh, 900px);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 25px 80px rgba(0,0,0,0.6);
+    border: 1px solid rgba(148,163,184,0.35);
+    background: #020617;
+  }
+
+  .map-fullscreen-overlay .map-viewport {
+    aspect-ratio: unset;
+    height: 100%;
+  }
+
+  .server-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .server-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .view-map {
+    padding: 10px 12px;
+    background: rgba(76, 169, 255, 0.15);
+    color: var(--text);
+    font-weight: 600;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+  }
+
+  .join-button {
+    padding: 10px 14px;
+    background: var(--accent-blue);
+    color: #0b0f1e;
+    font-weight: 600;
+    border-radius: 10px;
+    border: none;
+    text-decoration: none;
+    box-shadow: var(--shadow);
+  }
+
+  .player-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .player-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.2);
+  }
+
+  .player-row--selected {
+    outline: 2px solid #3b82f6;
+    outline-offset: -2px;
+    background: radial-gradient(circle at 0 0, rgba(59,130,246,0.25), transparent 50%), var(--panel);
+  }
+
+  .player-main {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 180px;
+  }
+
+  .avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    object-fit: cover;
+    background: #0b0f1e;
+  }
+
+  .username-link {
+    color: var(--text);
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .username-link:hover {
+    text-decoration: underline;
+  }
+
+  .player-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: flex-end;
+  }
+
+  .pill {
+    padding: 6px 10px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    font-size: 12px;
+    color: var(--text);
+  }
+
+  .small {
+    font-size: 12px;
+  }
+
+  .alert {
+    margin-bottom: 16px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid #ff6b6b33;
+    background: #31101a;
+    color: #ffb5b5;
+  }
+
+  .resize-handle {
+    width: 12px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border);
+    cursor: col-resize;
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+
+  .resize-handle:hover,
+  .resize-handle.dragging {
+    background: rgba(76, 169, 255, 0.15);
+    border-color: rgba(76, 169, 255, 0.5);
+  }
+
+  @media (max-width: 720px) {
+    .header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .panel-header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+`;
+
+export default DashboardPage;
+

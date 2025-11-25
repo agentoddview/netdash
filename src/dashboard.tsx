@@ -586,7 +586,7 @@ const MapView: React.FC<MapViewProps> = ({
   const dotSizePx = dotSize === "small" ? 8 : dotSize === "large" ? 14 : 11;
 
   const mapContent = (
-    <div className="map-container">
+    <div className="map-wrapper">
       <div className="map-toolbar">
         <label className="muted small" htmlFor="server-select">
           Server
@@ -604,9 +604,10 @@ const MapView: React.FC<MapViewProps> = ({
           ))}
         </select>
       </div>
-      <div className="map-viewport" ref={viewportRef}>
-        <div
-          className="map-inner"
+      <div className="map-container">
+        <div className="map-viewport" ref={viewportRef}>
+          <div
+            className="map-inner"
           style={{
             transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`,
             transformOrigin: "center center",
@@ -630,8 +631,8 @@ const MapView: React.FC<MapViewProps> = ({
               onSelectPlayer(null);
             }
           }}
-        >
-          <img src={netMap} alt="Live map" className="map-image" draggable={false} />
+          >
+            <img src={netMap} alt="Live map" className="map-image" draggable={false} />
           {!hasServers && (
             <div className="muted small map-empty">No servers available.</div>
           )}
@@ -683,44 +684,45 @@ const MapView: React.FC<MapViewProps> = ({
           {playersWithPos.length === 0 && (
             <div className="muted small map-empty">No player coordinates for this server.</div>
           )}
-        </div>
-        <div className="map-controls">
-          <button onClick={() => setZoom((z) => Math.min(4, z + 0.2))}>+</button>
-          <button onClick={() => setZoom((z) => Math.max(0.5, z - 0.2))}>−</button>
-          <button
-            onClick={() => {
-              setZoom(1);
-              setOffset({ x: 0, y: 0 });
-            }}
-            title="Reset view"
-          >
-            ⟳
-          </button>
-          <button
-            onClick={onToggleFullscreen}
-            title={isFullscreen ? "Exit full screen" : "Full screen"}
-          >
-            ⛶
-          </button>
-          <button onClick={() => setShowSettings((v) => !v)} title="Map settings">
-            ⚙
-          </button>
-        </div>
-        {showSettings && (
-          <div className="map-settings">
-            <div className="map-settings-row">
-              <span>Dot size</span>
-              <select
-                value={dotSize}
-                onChange={(e) => setDotSize(e.target.value as DotSize)}
-              >
-                <option value="small">Small</option>
-                <option value="medium">Medium</option>
-                <option value="large">Large</option>
-              </select>
-            </div>
           </div>
-        )}
+          <div className="map-controls">
+            <button onClick={() => setZoom((z) => Math.min(4, z + 0.2))}>+</button>
+            <button onClick={() => setZoom((z) => Math.max(0.5, z - 0.2))}>−</button>
+            <button
+              onClick={() => {
+                setZoom(1);
+                setOffset({ x: 0, y: 0 });
+              }}
+              title="Reset view"
+            >
+              ⟳
+            </button>
+            <button
+              onClick={onToggleFullscreen}
+              title={isFullscreen ? "Exit full screen" : "Full screen"}
+            >
+              ⛶
+            </button>
+            <button onClick={() => setShowSettings((v) => !v)} title="Map settings">
+              ⚙
+            </button>
+          </div>
+          {showSettings && (
+            <div className="map-settings">
+              <div className="map-settings-row">
+                <span>Dot size</span>
+                <select
+                  value={dotSize}
+                  onChange={(e) => setDotSize(e.target.value as DotSize)}
+                >
+                  <option value="small">Small</option>
+                  <option value="medium">Medium</option>
+                  <option value="large">Large</option>
+                </select>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -830,7 +832,7 @@ const globalStyles = `
     display: grid;
     grid-template-columns: minmax(240px, 0.35fr) 12px minmax(0, 0.65fr);
     gap: 12px;
-    align-items: stretch;
+    align-items: start;
     position: relative;
   }
 
@@ -869,13 +871,16 @@ const globalStyles = `
 
   .content-grid .panel {
     margin-bottom: 0;
-    height: 100%;
+    height: auto;
+    align-self: start;
+    min-height: 0;
   }
 
   .panel-servers {
     display: flex;
     flex-direction: column;
-    min-height: calc(100vh - 260px);
+    height: calc(100vh - 260px);
+    overflow: hidden;
   }
 
   .panel-header {
@@ -922,6 +927,8 @@ const globalStyles = `
     grid-template-columns: 1fr;
     gap: 14px;
     flex: 1;
+    min-height: 0;
+    overflow-y: auto;
   }
 
   .server-card {
@@ -940,17 +947,33 @@ const globalStyles = `
   }
 
   .map-panel {
-    min-height: calc(100vh - 260px);
     display: flex;
     flex-direction: column;
+    gap: 12px;
+    align-self: start;
+    min-height: 0;
   }
 
-  .map-container {
+  .map-wrapper {
+    width: 100%;
+    max-width: 100%;
     display: flex;
     flex-direction: column;
     gap: 10px;
-    flex: 1;
-    min-height: 100%;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .map-container {
+    width: 100%;
+    max-width: 100%;
+    aspect-ratio: 15469 / 9504; /* Matches net-map.png dimensions */
+    overflow: hidden;
+    position: relative;
+    background: #000;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
   }
 
   .map-toolbar {
@@ -969,13 +992,11 @@ const globalStyles = `
 
   .map-viewport {
     position: relative;
-    flex: 1;
-    border: 1px solid var(--border);
-    border-radius: 12px;
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
     overflow: hidden;
     background: #050814;
-    aspect-ratio: 16 / 9; /* TODO: update to match net-map.png */
-    height: auto;
     overscroll-behavior: contain;
   }
 
@@ -995,7 +1016,7 @@ const globalStyles = `
     inset: 0;
     width: 100%;
     height: 100%;
-    object-fit: fill;
+    object-fit: cover;
     pointer-events: none;
     user-select: none;
   }
@@ -1126,9 +1147,9 @@ const globalStyles = `
     background: #020617;
   }
 
-  .map-fullscreen-overlay .map-viewport {
-    aspect-ratio: unset;
+  .map-fullscreen-inner .map-wrapper {
     height: 100%;
+    justify-content: flex-start;
   }
 
   .server-header {
