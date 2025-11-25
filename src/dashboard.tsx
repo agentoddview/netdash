@@ -519,6 +519,28 @@ const MapView: React.FC<MapViewProps> = ({
   const [zoomToCursor, setZoomToCursor] = useState(true);
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
 
+  const zoomAtPoint = useCallback(
+    (factor: number, origin?: { x: number; y: number }) => {
+      const rect = viewportRef.current?.getBoundingClientRect();
+      const originX = origin?.x ?? (rect?.width ? rect.width / 2 : 0);
+      const originY = origin?.y ?? (rect?.height ? rect.height / 2 : 0);
+
+      setZoom((prevZoom) => {
+        const nextZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, prevZoom * factor));
+        const zoomRatio = nextZoom / prevZoom;
+        if (nextZoom === prevZoom) return prevZoom;
+
+        setOffset((prevOffset) => ({
+          x: prevOffset.x + (originX - originX * zoomRatio),
+          y: prevOffset.y + (originY - originY * zoomRatio),
+        }));
+
+        return nextZoom;
+      });
+    },
+    [MAX_ZOOM, MIN_ZOOM]
+  );
+
   useEffect(() => {
     if (!selectedServerId && servers[0]) {
       onSelect(servers[0].serverId);
@@ -613,27 +635,6 @@ const MapView: React.FC<MapViewProps> = ({
   const dotSizePx = dotSize === "small" ? 8 : dotSize === "large" ? 14 : 11;
   const viewportWidth = viewportSize.width || viewportRef.current?.clientWidth || 0;
   const viewportHeight = viewportSize.height || viewportRef.current?.clientHeight || 0;
-  const zoomAtPoint = useCallback(
-    (factor: number, origin?: { x: number; y: number }) => {
-      const rect = viewportRef.current?.getBoundingClientRect();
-      const originX = origin?.x ?? (rect?.width ? rect.width / 2 : 0);
-      const originY = origin?.y ?? (rect?.height ? rect.height / 2 : 0);
-
-      setZoom((prevZoom) => {
-        const nextZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, prevZoom * factor));
-        const zoomRatio = nextZoom / prevZoom;
-        if (nextZoom === prevZoom) return prevZoom;
-
-        setOffset((prevOffset) => ({
-          x: prevOffset.x + (originX - originX * zoomRatio),
-          y: prevOffset.y + (originY - originY * zoomRatio),
-        }));
-
-        return nextZoom;
-      });
-    },
-    [MAX_ZOOM, MIN_ZOOM]
-  );
 
   const mapContent = (
     <div className="map-wrapper">
