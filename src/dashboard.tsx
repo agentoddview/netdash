@@ -1265,6 +1265,18 @@ const globalStyles = `
     justify-content: center;
   }
 
+  .map-fullscreen-inner .map-container {
+    height: 100%;
+    width: auto;
+    max-width: 100%;
+    aspect-ratio: 15469 / 9504;
+    margin: 0 auto;
+  }
+
+  .map-fullscreen-inner .map-viewport {
+    height: 100%;
+  }
+
   .server-header {
     display: flex;
     align-items: center;
