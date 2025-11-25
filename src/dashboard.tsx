@@ -510,8 +510,14 @@ const MapView: React.FC<MapViewProps> = ({
   const viewportRef = useRef<HTMLDivElement | null>(null);
   type DotSize = "small" | "medium" | "large";
   const DOT_SIZE_KEY = "net-dashboard.dotSize";
+  const ZOOM_TO_CURSOR_KEY = "net-dashboard.zoomToCursor";
+  const MIN_ZOOM = 0.5;
+  const MAX_ZOOM = 4;
+  const ZOOM_FACTOR = 1.1;
   const [dotSize, setDotSize] = useState<DotSize>("medium");
   const [showSettings, setShowSettings] = useState(false);
+  const [zoomToCursor, setZoomToCursor] = useState(true);
+  const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
     if (!selectedServerId && servers[0]) {
@@ -525,6 +531,9 @@ const MapView: React.FC<MapViewProps> = ({
       if (saved === "small" || saved === "medium" || saved === "large") {
         setDotSize(saved);
       }
+      const savedZoomToCursor = localStorage.getItem(ZOOM_TO_CURSOR_KEY);
+      if (savedZoomToCursor === "true") setZoomToCursor(true);
+      if (savedZoomToCursor === "false") setZoomToCursor(false);
     } catch {
       // ignore
     }
@@ -533,10 +542,24 @@ const MapView: React.FC<MapViewProps> = ({
   useEffect(() => {
     try {
       localStorage.setItem(DOT_SIZE_KEY, dotSize);
+      localStorage.setItem(ZOOM_TO_CURSOR_KEY, String(zoomToCursor));
     } catch {
       // ignore
     }
-  }, [dotSize]);
+  }, [dotSize, zoomToCursor]);
+
+  useEffect(() => {
+    const el = viewportRef.current;
+    if (!el) return;
+
+    const updateSize = () =>
+      setViewportSize({ width: el.clientWidth, height: el.clientHeight });
+
+    updateSize();
+    const observer = new ResizeObserver(updateSize);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const el = viewportRef.current;
@@ -545,15 +568,19 @@ const MapView: React.FC<MapViewProps> = ({
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      const delta = e.deltaY < 0 ? 0.1 : -0.1;
-      setZoom((z) => Math.min(4, Math.max(0.5, z + delta)));
+      const rect = el.getBoundingClientRect();
+      const originX = zoomToCursor ? e.clientX - rect.left : rect.width / 2;
+      const originY = zoomToCursor ? e.clientY - rect.top : rect.height / 2;
+      const zoomFactor = e.deltaY < 0 ? ZOOM_FACTOR : 1 / ZOOM_FACTOR;
+
+      zoomAtPoint(zoomFactor, { x: originX, y: originY });
     };
 
     el.addEventListener("wheel", handleWheel, { passive: false });
     return () => {
       el.removeEventListener("wheel", handleWheel);
     };
-  }, []);
+  }, [zoomToCursor, zoomAtPoint]);
 
   useEffect(() => {
     if (!isFullscreen) return;
@@ -584,6 +611,29 @@ const MapView: React.FC<MapViewProps> = ({
 
   const hasServers = servers.length > 0;
   const dotSizePx = dotSize === "small" ? 8 : dotSize === "large" ? 14 : 11;
+  const viewportWidth = viewportSize.width || viewportRef.current?.clientWidth || 0;
+  const viewportHeight = viewportSize.height || viewportRef.current?.clientHeight || 0;
+  const zoomAtPoint = useCallback(
+    (factor: number, origin?: { x: number; y: number }) => {
+      const rect = viewportRef.current?.getBoundingClientRect();
+      const originX = origin?.x ?? (rect?.width ? rect.width / 2 : 0);
+      const originY = origin?.y ?? (rect?.height ? rect.height / 2 : 0);
+
+      setZoom((prevZoom) => {
+        const nextZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, prevZoom * factor));
+        const zoomRatio = nextZoom / prevZoom;
+        if (nextZoom === prevZoom) return prevZoom;
+
+        setOffset((prevOffset) => ({
+          x: prevOffset.x + (originX - originX * zoomRatio),
+          y: prevOffset.y + (originY - originY * zoomRatio),
+        }));
+
+        return nextZoom;
+      });
+    },
+    [MAX_ZOOM, MIN_ZOOM]
+  );
 
   const mapContent = (
     <div className="map-wrapper">
@@ -605,15 +655,14 @@ const MapView: React.FC<MapViewProps> = ({
         </select>
       </div>
       <div className="map-container">
-        <div className="map-viewport" ref={viewportRef}>
-          <div
-            className="map-inner"
-          style={{
-            transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`,
-            transformOrigin: "center center",
-          }}
+        <div
+          className="map-viewport"
+          ref={viewportRef}
           onMouseDown={(e) => {
             e.preventDefault();
+            if (e.button !== 0) return;
+            const target = e.target as HTMLElement;
+            if (target.closest(".map-controls") || target.closest(".map-settings")) return;
             setIsDragging(true);
             setDragStart({ x: e.clientX - offset.x, y: e.clientY - offset.y });
           }}
@@ -626,68 +675,79 @@ const MapView: React.FC<MapViewProps> = ({
           }}
           onMouseUp={() => setIsDragging(false)}
           onMouseLeave={() => setIsDragging(false)}
-          onClick={(e) => {
-            if (e.target === e.currentTarget && onSelectPlayer) {
-              onSelectPlayer(null);
-            }
-          }}
+        >
+          <div
+            className="map-inner"
+            style={{
+              transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`,
+              transformOrigin: "0 0",
+            }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget && onSelectPlayer) {
+                onSelectPlayer(null);
+              }
+            }}
           >
             <img src={netMap} alt="Live map" className="map-image" draggable={false} />
-          {!hasServers && (
-            <div className="muted small map-empty">No servers available.</div>
-          )}
-          {playersWithPos.map((player) => {
-            const x = player.position?.mapX ?? 0;
-            const y = player.position?.mapY ?? 0;
-            const isPassenger = player.role === "Passenger" || player.team === "Passenger";
-            return (
-              <div
-                key={player.userId}
-                className={`map-dot ${isPassenger ? "passenger" : ""} ${
-                  highlightedPlayerId === player.userId ? "selected" : ""
-                }`}
-                style={{
-                  left: `${x * 100}%`,
-                  top: `${y * 100}%`,
-                  width: `${dotSizePx}px`,
-                  height: `${dotSizePx}px`,
-                  background: isPassenger ? "#ffffff" : colorFor(player),
-                }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDotClick(player);
-                }}
-                onMouseEnter={() => setHovered(player.userId)}
-                onMouseLeave={() =>
-                  setHovered((prev) => (prev === player.userId ? null : prev))
-                }
-              >
-                {hovered === player.userId && (
-                  <div className="map-tooltip">
-                    <div className="tooltip-row">
-                      <span className="username-link">{player.username}</span>
-                      <span className="muted small">{player.displayName}</span>
+          </div>
+          <div className="map-overlay">
+            {!hasServers && (
+              <div className="muted small map-empty">No servers available.</div>
+            )}
+            {playersWithPos.map((player) => {
+              const mapX = player.position?.mapX ?? 0;
+              const mapY = player.position?.mapY ?? 0;
+              const x = mapX * viewportWidth * zoom + offset.x;
+              const y = mapY * viewportHeight * zoom + offset.y;
+              const isPassenger = player.role === "Passenger" || player.team === "Passenger";
+              return (
+                <div
+                  key={player.userId}
+                  className={`map-dot ${isPassenger ? "passenger" : ""} ${
+                    highlightedPlayerId === player.userId ? "selected" : ""
+                  }`}
+                  style={{
+                    left: `${x}px`,
+                    top: `${y}px`,
+                    width: `${dotSizePx}px`,
+                    height: `${dotSizePx}px`,
+                    background: isPassenger ? "#ffffff" : colorFor(player),
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDotClick(player);
+                  }}
+                  onMouseEnter={() => setHovered(player.userId)}
+                  onMouseLeave={() =>
+                    setHovered((prev) => (prev === player.userId ? null : prev))
+                  }
+                >
+                  {hovered === player.userId && (
+                    <div className="map-tooltip">
+                      <div className="tooltip-row">
+                        <span className="username-link">{player.username}</span>
+                        <span className="muted small">{player.displayName}</span>
+                      </div>
+                      <div className="tooltip-row">
+                        <span className="pill">{player.role || player.team || "-"}</span>
+                        <span className="pill">{player.rank ?? "-"}</span>
+                      </div>
+                      <div className="tooltip-row">
+                        <span className="pill">Miles {player.miles ?? 0}</span>
+                        <span className="pill">Cash {player.cash ?? 0}</span>
+                      </div>
                     </div>
-                    <div className="tooltip-row">
-                      <span className="pill">{player.role || player.team || "-"}</span>
-                      <span className="pill">{player.rank ?? "-"}</span>
-                    </div>
-                    <div className="tooltip-row">
-                      <span className="pill">Miles {player.miles ?? 0}</span>
-                      <span className="pill">Cash {player.cash ?? 0}</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-          {playersWithPos.length === 0 && (
-            <div className="muted small map-empty">No player coordinates for this server.</div>
-          )}
+                  )}
+                </div>
+              );
+            })}
+            {playersWithPos.length === 0 && hasServers && (
+              <div className="muted small map-empty">No player coordinates for this server.</div>
+            )}
           </div>
           <div className="map-controls">
-            <button onClick={() => setZoom((z) => Math.min(4, z + 0.2))}>+</button>
-            <button onClick={() => setZoom((z) => Math.max(0.5, z - 0.2))}>−</button>
+            <button onClick={() => zoomAtPoint(ZOOM_FACTOR, { x: viewportWidth / 2, y: viewportHeight / 2 })}>+</button>
+            <button onClick={() => zoomAtPoint(1 / ZOOM_FACTOR, { x: viewportWidth / 2, y: viewportHeight / 2 })}>−</button>
             <button
               onClick={() => {
                 setZoom(1);
@@ -709,6 +769,16 @@ const MapView: React.FC<MapViewProps> = ({
           </div>
           {showSettings && (
             <div className="map-settings">
+              <div className="map-settings-row">
+                <span>Zoom to cursor</span>
+                <label className="toggle">
+                  <input
+                    type="checkbox"
+                    checked={zoomToCursor}
+                    onChange={(e) => setZoomToCursor(e.target.checked)}
+                  />
+                </label>
+              </div>
               <div className="map-settings-row">
                 <span>Dot size</span>
                 <select
@@ -1005,10 +1075,21 @@ const globalStyles = `
     width: 100%;
     height: 100%;
     cursor: grab;
+    will-change: transform;
   }
 
   .map-inner:active {
     cursor: grabbing;
+  }
+
+  .map-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .map-overlay .map-dot {
+    pointer-events: auto;
   }
 
   .map-image {
@@ -1067,6 +1148,7 @@ const globalStyles = `
     display: grid;
     place-items: center;
     background: rgba(0,0,0,0.35);
+    pointer-events: none;
   }
 
   .map-controls {
@@ -1125,6 +1207,13 @@ const globalStyles = `
     color: #e5e7eb;
     padding: 4px 10px;
     font-size: 13px;
+  }
+
+  .map-settings input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #4b7cff;
+    cursor: pointer;
   }
 
   .map-fullscreen-overlay {
