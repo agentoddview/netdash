@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { NavLink, useNavigate, useParams } from "react-router-dom";
-import { MapView, globalStyles, shortenServerId, getJoinUrl, type GameState, type Server, type Player } from "./dashboard";
+import { globalStyles, shortenServerId, getJoinUrl, type GameState, type Server, type Player } from "./dashboard";
 import { useAuth } from "./AuthGate";
 import { useTheme } from "./ThemeContext";
 import PlayerRow from "./PlayerRow";
+import LiveMap from "./LiveMap";
 import { useAvatarMap } from "./useAvatarMap";
 
 const API_BASE = import.meta.env.VITE_API_URL;
@@ -299,7 +300,7 @@ const ServerDetailPage: React.FC = () => {
             <h2>Live Map</h2>
             <p className="muted">Player positions (this server).</p>
           </div>
-          <MapView
+          <LiveMap
             servers={[currentServer]}
             selectedServerId={currentServer.serverId}
             onSelect={() => {}}
@@ -308,6 +309,7 @@ const ServerDetailPage: React.FC = () => {
             isFullscreen={isMapFullscreen}
             onToggleFullscreen={() => setIsMapFullscreen((v) => !v)}
             onExitFullscreen={() => setIsMapFullscreen(false)}
+            formatServerId={shortenServerId}
           />
         </section>
       </div>

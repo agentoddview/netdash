@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
-import netMap from "./assets/net-map.png";
 import { useAuth } from "./AuthGate";
 import { useTheme } from "./ThemeContext";
 import { NavLink, useNavigate } from "react-router-dom";
+import LiveMap from "./LiveMap";
 
 type Summary = {
   onlineTotal: number;
@@ -68,30 +68,6 @@ type AvatarProxyResponse = {
 const API_BASE = import.meta.env.VITE_API_URL;
 const headshotApiUrl = (userId: number) => `${API_BASE}/proxy/avatar/${userId}`;
 
-export const getStaffHighlight = (rank?: string | null): { color?: string; icon?: string } => {
-  if (!rank) return {};
-  const r = rank.toLowerCase();
-  if (r.includes("founder")) {
-    return { color: "#ef4444", icon: "ðŸ‘‘" };
-  }
-  if (r.includes("chief of staff")) {
-    return { color: "#38bdf8", icon: "ðŸ‘”" };
-  }
-  if (r.includes("developer")) {
-    return { color: "#f97316", icon: "ðŸ”¨" };
-  }
-  if (r.includes("lead supervisor")) {
-    return { color: "#22c55e", icon: "ðŸ›¡" };
-  }
-  if (r.includes("senior supervisor")) {
-    return { color: "#22c55e", icon: "ðŸ›¡" };
-  }
-  if (r.includes("supervisor")) {
-    return { color: "#22c55e", icon: "ðŸ›¡" };
-  }
-  return {};
-};
-
 export const shortenServerId = (id: string) => {
   if (!id) return "-";
   const [, jobId] = id.split(":");
@@ -108,6 +84,30 @@ export const getJoinUrl = (server: Server) => {
   const jobId = server.jobId ?? jobPart;
   if (!placeId || !jobId) return null;
   return `roblox://experiences/start?placeId=${placeId}&gameInstanceId=${jobId}`;
+};
+
+export const getStaffHighlight = (rank?: string | null): { color?: string; icon?: string } => {
+  if (!rank) return {};
+  const r = rank.toLowerCase();
+  if (r.includes("founder")) {
+    return { color: "#ef4444", icon: "👑" };
+  }
+  if (r.includes("chief of staff")) {
+    return { color: "#38bdf8", icon: "👔" };
+  }
+  if (r.includes("developer")) {
+    return { color: "#f97316", icon: "🔨" };
+  }
+  if (r.includes("lead supervisor")) {
+    return { color: "#22c55e", icon: "🛡" };
+  }
+  if (r.includes("senior supervisor")) {
+    return { color: "#22c55e", icon: "🛡" };
+  }
+  if (r.includes("supervisor")) {
+    return { color: "#22c55e", icon: "🛡" };
+  }
+  return {};
 };
 
 const DashboardPage: React.FC = () => {
@@ -274,192 +274,288 @@ const DashboardPage: React.FC = () => {
     e.preventDefault();
     setDragging(true);
   };
-    const roleEntries = summary?.onlineByRole ? Object.entries(summary.onlineByRole) : [];
+  const roleEntries = summary?.onlineByRole ? Object.entries(summary.onlineByRole) : [];
 
-const mapContent = (
-    <div className="map-wrapper">
-      <div className="map-toolbar">
-        <label className="muted small" htmlFor="server-select">
-          Server
-        </label>
-        <select
-          id="server-select"
-          value={currentServer?.serverId || ""}
-          onChange={(e) => onSelect(e.target.value)}
-          className="map-select"
-        >
-          {servers.map((s) => (
-            <option key={s.serverId} value={s.serverId}>
-              {shortenServerId(s.serverId)}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className="map-container">
-        <div
-          className="map-viewport"
-          ref={viewportRef}
-          onMouseDown={(e) => {
-            if (e.button !== 0) return;
-            const target = e.target as HTMLElement;
-            if (target.closest(".map-controls") || target.closest(".map-settings")) return;
-            e.preventDefault();
-            setIsDragging(true);
-            setDragStart({ x: e.clientX - offset.x, y: e.clientY - offset.y });
-          }}
-          onMouseMove={(e) => {
-            if (!isDragging || !dragStart) return;
-            setOffset({
-              x: e.clientX - dragStart.x,
-              y: e.clientY - dragStart.y,
-            });
-          }}
-          onMouseUp={() => setIsDragging(false)}
-          onMouseLeave={() => setIsDragging(false)}
-        >
-          <div
-            className="map-inner"
-            style={{
-              transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`,
-              transformOrigin: "0 0",
-            }}
-            onClick={(e) => {
-              if (e.target === e.currentTarget && onSelectPlayer) {
-                onSelectPlayer(null);
-              }
-            }}
-          >
-            <img src={netMap} alt="Live map" className="map-image" draggable={false} />
+  useEffect(() => {
+    if (!dragging) return;
+    const onMove = (e: MouseEvent) => {
+      if (!contentGridRef.current) return;
+      const rect = contentGridRef.current.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const ratio = x / rect.width;
+      const clamped = Math.min(0.55, Math.max(0.18, ratio));
+      setSplit(clamped);
+    };
+    const onUp = () => setDragging(false);
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+  }, [dragging]);
+
+  useEffect(() => {
+    if (!highlightedPlayerId || !selectedRowRef.current) return;
+    selectedRowRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [highlightedPlayerId]);
+
+  const avatarSrc = user?.avatarUrl;
+  const avatarFallback = user?.username?.charAt(0)?.toUpperCase() ?? "?";
+  return (
+    <div className="dashboard">
+      <style>{globalStyles}</style>
+      <header className="header">
+        <div>
+          <p className="eyebrow">Network Dashboard</p>
+          <h1>Operations Pulse</h1>
+          <div className="top-nav">
+            <NavLink to="/" className={({ isActive }) => `nav-link ${isActive ? "nav-link--active" : ""}`}>
+              Main
+            </NavLink>
+            <NavLink to="/servers" className={({ isActive }) => `nav-link ${isActive ? "nav-link--active" : ""}`}>
+              Servers
+            </NavLink>
           </div>
-          <div className="map-overlay">
-            {!hasServers && (
-              <div className="muted small map-empty">No servers available.</div>
-            )}
-            {playersWithPos.map((player) => {
-              const mapX = player.position?.mapX ?? 0;
-              const mapY = player.position?.mapY ?? 0;
-              const worldX = mapX * viewportWidth;
-              const worldY = mapY * viewportHeight;
-              const screenX = offset.x + worldX * zoom;
-              const screenY = offset.y + worldY * zoom;
-              const isPassenger = player.role === "Passenger" || player.team === "Passenger";
-              return (
-                <div
-                  key={player.userId}
-                  className="map-dot-wrapper"
-                  style={{
-                    left: `${screenX}px`,
-                    top: `${screenY}px`,
-                    transform: `translate(-50%, -50%)`,
-                    transformOrigin: "center",
+        </div>
+        <div className="header-right">
+          <div className="status-chip">
+            <span className="dot" />
+            {loading ? "Syncing" : "Live"}
+          </div>
+          <div className="account-menu">
+            <button
+              className="account-trigger"
+              onClick={() => setIsAccountOpen((v) => !v)}
+              aria-haspopup="true"
+              aria-expanded={isAccountOpen}
+            >
+              {avatarSrc ? (
+                <img src={avatarSrc} alt={`${user?.username} avatar`} className="account-avatar" />
+              ) : (
+                <div className="avatar-fallback">{avatarFallback}</div>
+              )}
+              <span className="account-name">{user?.username}</span>
+            </button>
+            {isAccountOpen && (
+              <div className="account-dropdown">
+                <button className="account-item" onClick={toggleTheme}>
+                  {theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+                </button>
+                <button
+                  className="account-item"
+                  onClick={() => {
+                    setIsAccountOpen(false);
+                    navigate("/settings");
                   }}
                 >
-                  <div
-                    className={`map-dot ${isPassenger ? "passenger" : ""} ${
-                      highlightedPlayerId === player.userId ? "selected" : ""
-                    }`}
-                    style={{
-                      width: `${dotSizePx}px`,
-                      height: `${dotSizePx}px`,
-                      background: isPassenger ? "#ffffff" : colorFor(player),
-                    }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDotClick(player);
-                    }}
-                    onMouseEnter={() => setHovered(player.userId)}
-                    onMouseLeave={() =>
-                      setHovered((prev) => (prev === player.userId ? null : prev))
-                    }
-                  />
-                  {hovered === player.userId && (
-                    <div className="map-tooltip">
-                      <div className="tooltip-row">
-                        <span className="username-link">{player.username}</span>
-                        <span className="muted small">{player.displayName}</span>
-                      </div>
-                        <div className="tooltip-row">
-                          <span className="pill">
-                            {player.role || player.team || "-"}
-                          </span>
-                          <span className="pill">{player.rank ?? "-"}</span>
-                        </div>
-                      <div className="tooltip-row">
-                        <span className="pill">Miles {player.miles ?? 0}</span>
-                        <span className="pill">Cash {player.cash ?? 0}</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-            {playersWithPos.length === 0 && hasServers && (
-              <div className="muted small map-empty">No player coordinates for this server.</div>
+                  Settings
+                </button>
+                <button
+                  className="account-item"
+                  onClick={() => {
+                    setIsAccountOpen(false);
+                    logout();
+                  }}
+                >
+                  Log out
+                </button>
+              </div>
             )}
           </div>
-          <div className="map-controls">
-            <button onClick={() => zoomAtPoint(ZOOM_FACTOR, { x: viewportWidth / 2, y: viewportHeight / 2 })}>+</button>
-            <button onClick={() => zoomAtPoint(1 / ZOOM_FACTOR, { x: viewportWidth / 2, y: viewportHeight / 2 })}>âˆ’</button>
-            <button
-              onClick={() => {
-                setZoom(1);
-                setOffset(centerOffsetFor(1));
-              }}
-              title="Reset view"
-            >
-              âŸ³
-            </button>
-            <button
-              onClick={onToggleFullscreen}
-              title={isFullscreen ? "Exit full screen" : "Full screen"}
-            >
-              â›¶
-            </button>
-            <button onClick={() => setShowSettings((v) => !v)} title="Map settings">
-              âš™
-            </button>
-          </div>
-          {showSettings && (
-            <div className="map-settings">
-              <div className="map-settings-row">
-                <span>Zoom to cursor</span>
-                <label className="toggle">
-                  <input
-                    type="checkbox"
-                    checked={zoomToCursor}
-                    onChange={(e) => setZoomToCursor(e.target.checked)}
-                  />
-                </label>
+        </div>
+      </header>
+
+      {error && <div className="alert">Error: {error}</div>}
+
+      <section className="stats">
+        <StatCard
+          label="Players Online"
+          value={summary?.onlineTotal ?? 0}
+          accent="var(--accent-green)"
+        />
+        <StatCard
+          label="Servers Online"
+          value={summary?.serversOnline ?? 0}
+          accent="var(--accent-blue)"
+        />
+        <StatCard
+          label="Last Updated"
+          value={formatDate(summary?.lastUpdated)}
+          accent="var(--accent-purple)"
+        />
+      </section>
+
+      <section className="panel">
+        <div className="panel-header">
+          <h2>Online by Role</h2>
+          <p className="muted">Snapshot of active roles across all servers.</p>
+        </div>
+        <div className="role-grid">
+          {roleEntries.length > 0 &&
+            roleEntries.map(([role, count]) => (
+              <div key={role} className="role-card">
+                <span className="role-name">{role}</span>
+                <span className="role-count">{count}</span>
               </div>
-              <div className="map-settings-row">
-                <span>Dot size</span>
-                <select
-                  value={dotSize}
-                  onChange={(e) => setDotSize(e.target.value as DotSize)}
-                >
-                  <option value="small">Small</option>
-                  <option value="medium">Medium</option>
-                  <option value="large">Large</option>
-                </select>
-              </div>
-            </div>
+            ))}
+          {!loading && roleEntries.length === 0 && (
+            <p className="muted">No role data available.</p>
           )}
         </div>
+      </section>
+
+      <div
+        className="content-grid"
+        ref={contentGridRef}
+        style={{
+          gridTemplateColumns: `minmax(240px, ${split}fr) 12px minmax(0, ${(1 - split).toFixed(
+            2
+          )}fr)`,
+        }}
+      >
+        <section className="panel panel-servers">
+          <div className="panel-header">
+            <h2>Servers & Players</h2>
+            <p className="muted">Players grouped by the servers they are on.</p>
+          </div>
+          <div className="server-grid">
+            {loading && <p className="muted">Loading servers...</p>}
+            {!loading && (!playersState?.servers || playersState.servers.length === 0) && (
+              <p className="muted">No servers online right now.</p>
+            )}
+            {!loading &&
+              playersState?.servers?.map((server) => {
+                const joinUrl = getJoinUrl(server);
+                const isSelected = selectedServerId === server.serverId;
+                return (
+                  <div className={`server-card ${isSelected ? "server-card-selected" : ""}`} key={server.serverId}>
+                    <div className="server-header">
+                      <div>
+                        <p className="muted">Server</p>
+                        <h3>{shortenServerId(server.serverId)}</h3>
+                        <p className="muted small">Updated {formatDate(server.updatedAt)}</p>
+                      </div>
+                      <div className="server-actions">
+                        <button className="view-map" onClick={() => handleSelectServer(server.serverId)}>
+                          View Map
+                        </button>
+                        {joinUrl ? (
+                          <a className="join-button" href={joinUrl}>
+                            Join
+                          </a>
+                        ) : (
+                          <span className="muted small">Join unavailable</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="player-list">
+                      {server.players && server.players.length > 0 ? (
+                        server.players.map((player) => {
+                          const isHighlighted = highlightedPlayerId === player.userId;
+                          const { color: usernameColor, icon: roleIcon } = getStaffHighlight(
+                            player.rank
+                          );
+                          return (
+                            <div
+                              className={`player-row ${
+                                isHighlighted ? "player-row--selected" : ""
+                              }`}
+                              key={`${server.serverId}-${player.userId}`}
+                              ref={isHighlighted ? selectedRowRef : undefined}
+                              onClick={() =>
+                                handleSelectPlayer((current) =>
+                                  current === player.userId ? null : player.userId
+                                )
+                              }
+                            >
+                              <div className="player-main">
+                                <img
+                                  src={avatarUrl(player.userId)}
+                                  alt={`${player.username} avatar`}
+                                  className="avatar"
+                              />
+                              <div>
+                                <a
+                                  href={profileUrl(player.userId)}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="username-link"
+                                  style={usernameColor ? { color: usernameColor } : undefined}
+                                >
+                                  {roleIcon && (
+                                    <span className="role-icon" aria-hidden="true">
+                                      {roleIcon}
+                                    </span>
+                                  )}
+                                  {player.username}
+                                </a>
+                                <p className="muted small">{player.displayName}</p>
+                              </div>
+                            </div>
+                              <div className="player-tags">
+                                <span className="pill">{player.role || player.team || "-"}</span>
+                                <span className="pill">{player.rank ?? "-"}</span>
+                                <span className="pill">Miles {player.miles ?? 0}</span>
+                                <span className="pill">Cash {player.cash ?? 0}</span>
+                              </div>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <p className="muted">No players in this server.</p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+        </section>
+
+        <div
+          className={`resize-handle ${dragging ? "dragging" : ""}`}
+          onMouseDown={handleStartDrag}
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize panels"
+        />
+
+        <section className="panel map-panel">
+          <div className="panel-header">
+            <h2>Live Map</h2>
+            <p className="muted">Player positions (select server).</p>
+          </div>
+          <LiveMap
+            servers={playersState?.servers || []}
+            selectedServerId={selectedServerId}
+            onSelect={handleSelectServer}
+            highlightedPlayerId={highlightedPlayerId}
+            onSelectPlayer={handleSelectPlayer}
+            isFullscreen={isMapFullscreen}
+            onToggleFullscreen={() => setIsMapFullscreen((v) => !v)}
+            onExitFullscreen={() => setIsMapFullscreen(false)}
+            formatServerId={shortenServerId}
+          />
+        </section>
       </div>
     </div>
   );
+};
 
-  if (isFullscreen) {
-    return (
-      <div className="map-fullscreen-overlay" onClick={onExitFullscreen}>
-        <div className="map-fullscreen-inner" onClick={(e) => e.stopPropagation()}>
-          {mapContent}
-        </div>
+const StatCard: React.FC<{ label: string; value: number | string; accent: string }> = ({
+  label,
+  value,
+  accent,
+}) => {
+  return (
+    <div className="stat-card">
+      <div className="stat-indicator" style={{ background: accent }} />
+      <div>
+        <p className="muted">{label}</p>
+        <p className="stat-value">{value}</p>
       </div>
-    );
-  }
-
-  return mapContent;
+    </div>
+  );
 };
 
 export const globalStyles = `
