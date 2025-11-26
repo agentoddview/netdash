@@ -12,14 +12,32 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate }) => {
   if (!user) return null;
 
   const { permissions } = user;
-  const rows: Array<{ label: string; granted: boolean }> = [
-    { label: "Control Center", granted: permissions.hasControlCenter },
-    { label: "Donator", granted: permissions.isDonator },
-    { label: "Supervisor", granted: permissions.isSupervisor },
-    { label: "Lead Supervisor", granted: permissions.isLeadSupervisor },
-    { label: "Developer", granted: permissions.isDeveloper },
-    { label: "Administration", granted: permissions.isAdmin },
+  const permissionRows: Array<{
+    key: string;
+    label: string;
+    flag: boolean;
+    level: number;
+  }> = [
+    { key: "controlCenter", label: "Control Center", flag: permissions.hasControlCenter, level: 1 },
+    { key: "donator", label: "Donator", flag: permissions.isDonator, level: 2 },
+    { key: "supervisor", label: "Supervisor", flag: permissions.isSupervisor, level: 3 },
+    { key: "leadSupervisor", label: "Lead Supervisor", flag: permissions.isLeadSupervisor, level: 4 },
+    { key: "developer", label: "Developer", flag: permissions.isDeveloper, level: 5 },
+    { key: "admin", label: "Administration", flag: permissions.isAdmin, level: 6 },
   ];
+  const grantedRows = permissionRows.filter((row) => row.flag);
+
+  const getPrimaryRoleLabel = () => {
+    if (permissions.isAdmin) return "Administration";
+    if (permissions.isDeveloper) return "Developer";
+    if (permissions.isLeadSupervisor) return "Lead Supervisor";
+    if (permissions.isSupervisor) return "Supervisor";
+    if (permissions.isDonator) return "Donator";
+    if (permissions.hasControlCenter) return "Control Center";
+    return null;
+  };
+
+  const roleLabel = getPrimaryRoleLabel();
 
   const avatarFallback = user.username?.charAt(0)?.toUpperCase() ?? "?";
 
@@ -49,7 +67,10 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate }) => {
         <div className="profile-meta">
           <h2>{user.username}</h2>
           <p className="muted">{user.displayName}</p>
-          <div className="pill">Level {permissions.level}</div>
+          <div className="pill">
+            {roleLabel ? `(${roleLabel}) ` : ""}
+            Level {permissions.level}
+          </div>
         </div>
       </section>
 
@@ -58,23 +79,27 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate }) => {
           <h2>Permissions</h2>
           <p className="muted">Access granted to your account.</p>
         </div>
-        <div className="permissions-grid">
-          {rows.map((row) => (
-            <div key={row.label} className="permission-row">
-              <div>
-                <p className="muted small">{row.label}</p>
-                <div className="pill">Level {permissions.level}</div>
+        {grantedRows.length === 0 ? (
+          <p className="muted">You currently don&apos;t have any special permissions.</p>
+        ) : (
+          <div className="permissions-grid">
+            {grantedRows.map((row) => (
+              <div key={row.key} className="permission-row">
+                <div>
+                  <p className="muted small">{row.label}</p>
+                  <div className="pill">Level {row.level}</div>
+                </div>
+                <div className="permission-status">
+                  <span className="pill">✓ Granted</span>
+                </div>
               </div>
-              <div className="permission-status">
-                {row.granted ? <span className="pill">✓ Granted</span> : <span className="muted">Not granted</span>}
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </section>
 
       <div style={{ display: "flex", justifyContent: "flex-end" }}>
-        <button className="logout-button" onClick={logout}>
+        <button className="view-map" onClick={logout}>
           Log out
         </button>
       </div>

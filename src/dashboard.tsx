@@ -408,15 +408,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
           <div className="panel-header">
             <h2>Servers & Players</h2>
             <p className="muted">Players grouped by the servers they are on.</p>
-            <div className="user-box">
-              <div className="user-meta">
-                <span className="username-link">{user?.username}</span>
-                <span className="muted small">{user?.displayName}</span>
-              </div>
-              <button className="logout-button" onClick={logout}>
-                Logout
-              </button>
-            </div>
           </div>
           <div className="server-grid">
             {loading && <p className="muted">Loading servers...</p>}

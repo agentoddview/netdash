@@ -164,6 +164,32 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             Log out
           </button>
         </div>
+        <div
+          style={{
+            marginTop: "24px",
+            textAlign: "center",
+            fontSize: "12px",
+            color: "#7d8cab",
+          }}
+        >
+          <a
+            href="https://netransit.net/terms"
+            target="_blank"
+            rel="noreferrer"
+            style={{ color: "#9cb3d8", textDecoration: "underline" }}
+          >
+            Terms of Service
+          </a>
+          <span style={{ margin: "0 8px" }}>•</span>
+          <a
+            href="https://netransit.net/privacy"
+            target="_blank"
+            rel="noreferrer"
+            style={{ color: "#9cb3d8", textDecoration: "underline" }}
+          >
+            Privacy Policy
+          </a>
+        </div>
       </div>
     );
   }
