@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import DashboardPage from "./dashboard";
 import SettingsPage from "./SettingsPage";
+import ServersPage from "./ServersPage";
 import AuthGate from "./AuthGate";
 
 export default function App() {
@@ -20,9 +21,12 @@ export default function App() {
 
   const renderRoute = () => {
     if (path === "/settings") {
-      return <SettingsPage onNavigate={navigate} />;
+      return <SettingsPage onNavigate={navigate} currentPath={path} />;
     }
-    return <DashboardPage onNavigate={navigate} />;
+    if (path === "/servers") {
+      return <ServersPage onNavigate={navigate} currentPath={path} />;
+    }
+    return <DashboardPage onNavigate={navigate} currentPath={path} />;
   };
 
   return (

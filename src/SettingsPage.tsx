@@ -4,6 +4,7 @@ import { globalStyles } from "./dashboard";
 
 type SettingsPageProps = {
   onNavigate?: (path: string) => void;
+  currentPath?: string;
 };
 
 const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate }) => {

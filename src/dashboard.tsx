@@ -9,14 +9,14 @@ type Summary = {
   lastUpdated: string | null;
 };
 
-type PlayerPosition = {
+export type PlayerPosition = {
   worldX: number | null;
   worldZ: number | null;
   mapX: number | null;
   mapY: number | null;
 };
 
-type Player = {
+export type Player = {
   userId: number;
   username: string;
   displayName: string;
@@ -31,7 +31,7 @@ type Player = {
   position?: PlayerPosition | null;
 };
 
-type Server = {
+export type Server = {
   serverId: string;
   placeId: number | null;
   jobId: string | null;
@@ -39,7 +39,7 @@ type Server = {
   players: Player[];
 };
 
-type GameState = {
+export type GameState = {
   servers: Server[];
   lastUpdated: string | null;
 };
@@ -66,7 +66,7 @@ type AvatarProxyResponse = {
 const API_BASE = import.meta.env.VITE_API_URL;
 const headshotApiUrl = (userId: number) => `${API_BASE}/proxy/avatar/${userId}`;
 
-const shortenServerId = (id: string) => {
+export const shortenServerId = (id: string) => {
   if (!id) return "-";
   const [, jobId] = id.split(":");
   const value = jobId || id;
@@ -75,9 +75,10 @@ const shortenServerId = (id: string) => {
 
 type DashboardPageProps = {
   onNavigate?: (path: string) => void;
+  currentPath?: string;
 };
 
-const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
+const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate, currentPath }) => {
   const [summary, setSummary] = useState<SummaryResponse | null>(null);
   const [playersState, setPlayersState] = useState<PlayersResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -302,6 +303,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
 
   const avatarSrc = user?.avatarUrl;
   const avatarFallback = user?.username?.charAt(0)?.toUpperCase() ?? "?";
+  const navItems = [
+    { label: "Main", path: "/" },
+    { label: "Servers", path: "/servers" },
+  ];
 
   return (
     <div className="dashboard">
@@ -310,6 +315,17 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
         <div>
           <p className="eyebrow">Network Dashboard</p>
           <h1>Operations Pulse</h1>
+          <div className="top-nav">
+            {navItems.map((item) => (
+              <button
+                key={item.path}
+                className={`nav-link ${currentPath === item.path ? "nav-link--active" : ""}`}
+                onClick={() => onNavigate?.(item.path)}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="header-right">
           <div className="status-chip">
@@ -962,6 +978,26 @@ export const globalStyles = `
     margin-bottom: 24px;
   }
 
+  .top-nav {
+    display: inline-flex;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .nav-link {
+    padding: 8px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.04);
+    color: var(--text);
+    cursor: pointer;
+  }
+
+  .nav-link--active {
+    background: rgba(76, 169, 255, 0.18);
+    border-color: rgba(76, 169, 255, 0.6);
+  }
+
   .eyebrow {
     text-transform: uppercase;
     letter-spacing: 0.12em;
@@ -1606,6 +1642,88 @@ export const globalStyles = `
     height: 100%;
     border-radius: 20px;
     font-size: 32px;
+  }
+
+  .servers-search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .servers-search input {
+    flex: 1;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.05);
+    color: var(--text);
+  }
+
+  .servers-search button {
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.08);
+    color: var(--text);
+    cursor: pointer;
+  }
+
+  .servers-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+  }
+
+  .server-card-grid {
+    background: linear-gradient(180deg, var(--panel), var(--panel-strong));
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .server-card-grid-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .role-rows {
+    display: grid;
+    gap: 8px;
+  }
+
+  .role-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    border-radius: 8px;
+    color: #0b0f1e;
+    font-weight: 600;
+  }
+
+  .role-row-label {
+    font-size: 14px;
+  }
+
+  .role-row-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 26px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: rgba(0,0,0,0.2);
+    color: #fff;
+    font-size: 12px;
   }
 
   .alert {
