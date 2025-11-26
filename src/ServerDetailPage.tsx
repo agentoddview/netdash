@@ -1,3 +1,4 @@
+
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, NavLink } from "react-router-dom";
 import { MapView, globalStyles, shortenServerId, getJoinUrl } from "./dashboard";
@@ -12,7 +13,7 @@ export const ServerDetailPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [avatarMap, setAvatarMap] = useState<Record<number, string>>({});
-  const [selectedServerId, setSelectedServerId] = useState<string | null>(serverId ?? null);
+  const selectedServerId = serverId ?? null;
   const [highlightedPlayerId, setHighlightedPlayerId] = useState<number | null>(null);
   const [isMapFullscreen, setIsMapFullscreen] = useState(false);
 
@@ -139,13 +140,14 @@ export const ServerDetailPage: React.FC = () => {
             <NavLink to="/" className={({ isActive }) => `nav-link ${isActive ? "nav-link--active" : ""}`}>
               Main
             </NavLink>
-            <NavLink to="/servers" className={({ isActive }) => `nav-link ${isActive ? "nav-link--active" : ""}`}>
+            <NavLink
+              to="/servers"
+              className={({ isActive }) => `nav-link ${isActive ? "nav-link--active" : ""}`}
+            >
               Servers
             </NavLink>
           </div>
-          <p className="muted small">
-            {players.length} players • Last updated {currentServer.updatedAt}
-          </p>
+          <p className="muted small">{players.length} players • Last updated {currentServer.updatedAt}</p>
         </div>
         <div className="header-right">
           <button className="view-map" onClick={() => navigate("/servers")}>
