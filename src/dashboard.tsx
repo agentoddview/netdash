@@ -334,9 +334,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate, currentPath }
             <span className="dot" />
             {loading ? "Syncing" : "Live"}
           </div>
-          <button className="theme-toggle" onClick={toggleTheme}>
-            {theme === "dark" ? "Light" : "Dark"} mode
-          </button>
           <div className="account-menu">
             <button
               className="account-trigger"
@@ -353,6 +350,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate, currentPath }
             </button>
             {isAccountOpen && (
               <div className="account-dropdown">
+                <button className="account-item" onClick={toggleTheme}>
+                  {theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+                </button>
                 <button
                   className="account-item"
                   onClick={() => {
@@ -1104,15 +1104,6 @@ export const globalStyles = `
 
   .account-name {
     font-weight: 600;
-  }
-
-  .theme-toggle {
-    padding: 8px 10px;
-    border-radius: 10px;
-    border: 1px solid var(--border);
-    background: rgba(255,255,255,0.04);
-    color: var(--text);
-    cursor: pointer;
   }
 
   .account-dropdown {
