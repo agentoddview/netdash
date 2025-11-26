@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import netMap from "./assets/net-map.png";
 import { useAuth } from "./AuthGate";
+import { useTheme } from "./ThemeContext";
 
 type Summary = {
   onlineTotal: number;
@@ -73,6 +74,17 @@ export const shortenServerId = (id: string) => {
   return value.length > 8 ? `${value.slice(0, 8)}...` : value;
 };
 
+export const getJoinUrl = (server: Server) => {
+  const [placePart, jobPart] = (server.serverId || "").split(":");
+  const parsedPlace = placePart?.startsWith("place-")
+    ? Number(placePart.replace("place-", ""))
+    : Number(placePart);
+  const placeId = server.placeId ?? (Number.isFinite(parsedPlace) ? parsedPlace : null);
+  const jobId = server.jobId ?? jobPart;
+  if (!placeId || !jobId) return null;
+  return `roblox://experiences/start?placeId=${placeId}&gameInstanceId=${jobId}`;
+};
+
 type DashboardPageProps = {
   onNavigate?: (path: string) => void;
   currentPath?: string;
@@ -92,6 +104,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate, currentPath }
   const [isMapFullscreen, setIsMapFullscreen] = useState(false);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const handleSelectPlayer = useCallback(
     (valueOrUpdater: number | null | ((prev: number | null) => number | null)) => {
       setHighlightedPlayerId((prev) =>
@@ -233,17 +246,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate, currentPath }
     }).format(date);
   };
 
-  const getJoinUrl = (server: Server) => {
-    const [placePart, jobPart] = (server.serverId || "").split(":");
-    const parsedPlace = placePart?.startsWith("place-")
-      ? Number(placePart.replace("place-", ""))
-      : Number(placePart);
-    const placeId = server.placeId ?? (Number.isFinite(parsedPlace) ? parsedPlace : null);
-    const jobId = server.jobId ?? jobPart;
-    if (!placeId || !jobId) return null;
-    return `roblox://experiences/start?placeId=${placeId}&gameInstanceId=${jobId}`;
-  };
-
   const profileUrl = (userId: number) => `https://www.roblox.com/users/${userId}/profile`;
   const avatarUrl = (userId: number) => avatarMap[userId] || headshotApiUrl(userId);
   const handleSelectServer = useCallback((id: string) => setSelectedServerId(id), []);
@@ -332,6 +334,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate, currentPath }
             <span className="dot" />
             {loading ? "Syncing" : "Live"}
           </div>
+          <button className="theme-toggle" onClick={toggleTheme}>
+            {theme === "dark" ? "Light" : "Dark"} mode
+          </button>
           <div className="account-menu">
             <button
               className="account-trigger"
@@ -956,6 +961,19 @@ export const globalStyles = `
     --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
   }
 
+  .theme-light {
+    --bg: #f4f6fb;
+    --panel: #ffffff;
+    --panel-strong: #f6f7fb;
+    --text: #0b0f1e;
+    --muted: #4b5563;
+    --border: #d0d7e3;
+    --accent-blue: linear-gradient(120deg, #2ca7ff, #4b7cff);
+    --accent-green: linear-gradient(120deg, #4ad295, #2ea17c);
+    --accent-purple: linear-gradient(120deg, #9b8cff, #6a6adf);
+    --shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  }
+
   * { box-sizing: border-box; }
   body {
     margin: 0;
@@ -1086,6 +1104,15 @@ export const globalStyles = `
 
   .account-name {
     font-weight: 600;
+  }
+
+  .theme-toggle {
+    padding: 8px 10px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.04);
+    color: var(--text);
+    cursor: pointer;
   }
 
   .account-dropdown {
@@ -1693,6 +1720,14 @@ export const globalStyles = `
     gap: 12px;
     padding-bottom: 8px;
     border-bottom: 1px solid var(--border);
+  }
+
+  .server-card-grid-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
   }
 
   .role-rows {

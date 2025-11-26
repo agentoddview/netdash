@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { globalStyles, shortenServerId, Server, Player, GameState } from "./dashboard";
+import { globalStyles, shortenServerId, Server, Player, GameState, getJoinUrl } from "./dashboard";
 
 type ServersPageProps = {
   onNavigate?: (path: string) => void;
@@ -127,14 +127,21 @@ const ServersPage: React.FC<ServersPageProps> = ({ onNavigate, currentPath }) =>
                     <p className="muted small">Server</p>
                     <h3>{shortenServerId(server.serverId)}</h3>
                   </div>
-                  <div className="pill">{totalPlayers} players</div>
+                  <div className="server-card-grid-actions">
+                    <div className="pill">{totalPlayers} players</div>
+                    {getJoinUrl(server) ? (
+                      <a className="join-button" href={getJoinUrl(server) ?? "#"}>
+                        Join
+                      </a>
+                    ) : null}
+                  </div>
                 </div>
                 {hasRoles ? (
                   <div className="role-rows">
-                    <RoleRow label="Bus Operators" count={busOperatorsCount} color="#22c55e" />
+                    <RoleRow label="Bus Operators" count={busOperatorsCount} color="#facc15" />
                     <RoleRow label="Transit Police" count={transitPoliceCount} color="#00A8FF" />
-                    <RoleRow label="Passengers" count={passengersCount} color="#f59e0b" />
-                    <RoleRow label="Choosing" count={choosingCount} color="#7c7cee" />
+                    <RoleRow label="Passengers" count={passengersCount} color="#ffffff" />
+                    <RoleRow label="Choosing" count={choosingCount} color="#9ca3af" />
                   </div>
                 ) : (
                   <p className="muted">

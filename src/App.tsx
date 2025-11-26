@@ -3,6 +3,7 @@ import DashboardPage from "./dashboard";
 import SettingsPage from "./SettingsPage";
 import ServersPage from "./ServersPage";
 import AuthGate from "./AuthGate";
+import { ThemeProvider } from "./ThemeContext";
 
 export default function App() {
   const [path, setPath] = useState(window.location.pathname);
@@ -30,8 +31,8 @@ export default function App() {
   };
 
   return (
-    <AuthGate>
-      {renderRoute()}
-    </AuthGate>
+    <ThemeProvider>
+      <AuthGate>{renderRoute()}</AuthGate>
+    </ThemeProvider>
   );
 }
