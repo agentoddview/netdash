@@ -566,6 +566,9 @@ const teamColorPalette: Record<string, string> = {
   "Transit Police": "#4ad295",
 };
 
+const TRANSIT_POLICE_COLOR = "#00A8FF";
+const CHOOSING_COLOR = "#A0A0A0";
+
 const MapView: React.FC<MapViewProps> = ({
   servers,
   selectedServerId,
@@ -719,6 +722,8 @@ const MapView: React.FC<MapViewProps> = ({
     ) || [];
 
   const colorFor = (player: Player) => {
+    if (player.team === "Transit Police") return TRANSIT_POLICE_COLOR;
+    if (player.team === "Choosing") return CHOOSING_COLOR;
     if (player.teamColor) return player.teamColor;
     return teamColorPalette[player.team] || "#6a6adf";
   };
@@ -835,10 +840,29 @@ const MapView: React.FC<MapViewProps> = ({
                         <span className="username-link">{player.username}</span>
                         <span className="muted small">{player.displayName}</span>
                       </div>
-                      <div className="tooltip-row">
-                        <span className="pill">{player.role || player.team || "-"}</span>
-                        <span className="pill">{player.rank ?? "-"}</span>
-                      </div>
+                        <div className="tooltip-row">
+                          <span
+                            className="pill"
+                            style={
+                              player.team === "Transit Police"
+                                ? {
+                                    backgroundColor: "rgba(0, 168, 255, 0.15)",
+                                    border: "1px solid #00A8FF",
+                                    color: "#00A8FF",
+                                  }
+                                : player.team === "Choosing"
+                                ? {
+                                    backgroundColor: "rgba(160, 160, 160, 0.15)",
+                                    border: "1px solid #A0A0A0",
+                                    color: "#A0A0A0",
+                                  }
+                                : undefined
+                            }
+                          >
+                            {player.role || player.team || "-"}
+                          </span>
+                          <span className="pill">{player.rank ?? "-"}</span>
+                        </div>
                       <div className="tooltip-row">
                         <span className="pill">Miles {player.miles ?? 0}</span>
                         <span className="pill">Cash {player.cash ?? 0}</span>
