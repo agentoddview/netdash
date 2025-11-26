@@ -3,6 +3,7 @@ import { useAuth } from "./AuthGate";
 import { useTheme } from "./ThemeContext";
 import { NavLink, useNavigate } from "react-router-dom";
 import LiveMap from "./LiveMap";
+import { ModActionButton } from "./components/moderation/ModActionButton";
 
 type Summary = {
   onlineTotal: number;
@@ -476,9 +477,7 @@ const DashboardPage: React.FC = () => {
                           );
                           return (
                             <div
-                              className={`player-row ${
-                                isHighlighted ? "player-row--selected" : ""
-                              }`}
+                              className={`player-row ${isHighlighted ? "player-row--selected" : ""}`}
                               key={`${server.serverId}-${player.userId}`}
                               ref={isHighlighted ? selectedRowRef : undefined}
                               onClick={() =>
@@ -492,25 +491,28 @@ const DashboardPage: React.FC = () => {
                                   src={avatarUrl(player.userId)}
                                   alt={`${player.username} avatar`}
                                   className="avatar"
-                              />
-                              <div>
-                                <a
-                                  href={profileUrl(player.userId)}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="username-link"
-                                  style={usernameColor ? { color: usernameColor } : undefined}
-                                >
-                                  {roleIcon && (
-                                    <span className="role-icon" aria-hidden="true">
-                                      {roleIcon}
-                                    </span>
-                                  )}
-                                  {player.username}
-                                </a>
-                                <p className="muted small">{player.displayName}</p>
+                                />
+                                <div>
+                                  <a
+                                    href={profileUrl(player.userId)}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="username-link"
+                                    style={usernameColor ? { color: usernameColor } : undefined}
+                                  >
+                                    {roleIcon && (
+                                      <span className="role-icon" aria-hidden="true">
+                                        {roleIcon}
+                                      </span>
+                                    )}
+                                    {player.username}
+                                  </a>
+                                  <p className="muted small">{player.displayName}</p>
+                                </div>
                               </div>
-                            </div>
+                              <div className="player-actions">
+                                <ModActionButton player={player} serverId={server.serverId} />
+                              </div>
                               <div className="player-tags">
                                 <span className="pill">{player.role || player.team || "-"}</span>
                                 <span className="pill">{player.rank ?? "-"}</span>

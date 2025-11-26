@@ -1,0 +1,126 @@
+import React, { useMemo, useState } from "react";
+import { useModeration } from "../../useModeration";
+import type { ModActionPlayer } from "./ModActionButton";
+
+type ModActionModalProps = {
+  isOpen: boolean;
+  onClose: () => void;
+  player: ModActionPlayer;
+  serverId: string;
+};
+
+type ActionKey = "kick" | "respawn" | "serverBan" | "globalBan" | "message";
+
+export const ModActionModal: React.FC<ModActionModalProps> = ({ isOpen, onClose, player, serverId }) => {
+  const { kick, respawn, serverBan, globalBan, message } = useModeration();
+  const [reason, setReason] = useState("");
+  const [msg, setMsg] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const playerLabel = useMemo(() => player.displayName || player.username, [player.displayName, player.username]);
+
+  if (!isOpen) return null;
+
+  const handleAction = async (action: ActionKey) => {
+    setError(null);
+    setSubmitting(true);
+    try {
+      if (action === "kick") {
+        await kick(player.userId, serverId, reason || undefined);
+      } else if (action === "respawn") {
+        await respawn(player.userId, serverId);
+      } else if (action === "serverBan") {
+        await serverBan(player.userId, serverId, reason || undefined);
+      } else if (action === "globalBan") {
+        await globalBan(player.userId, serverId, reason || undefined);
+      } else if (action === "message") {
+        const trimmed = msg.trim();
+        if (!trimmed) {
+          setError("Message cannot be empty.");
+          setSubmitting(false);
+          return;
+        }
+        await message(player.userId, serverId, trimmed);
+      }
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to submit action.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="mod-modal-overlay" onClick={onClose}>
+      <div
+        className="mod-modal"
+        onClick={(e) => {
+          e.stopPropagation();
+        }}
+      >
+        <div className="mod-modal-header">
+          <div>
+            <p className="muted small" style={{ margin: 0 }}>
+              Moderation tools
+            </p>
+            <h3 style={{ margin: "4px 0 0 0" }}>
+              {player.username}
+              {player.displayName ? ` (${player.displayName})` : ""}
+            </h3>
+            <p className="muted small" style={{ marginTop: 4 }}>
+              Server: {serverId}
+            </p>
+          </div>
+          <button className="mod-close" onClick={onClose} type="button" aria-label="Close moderation modal">
+            ×
+          </button>
+        </div>
+
+        <label className="mod-field">
+          <span className="muted small">Reason (optional)</span>
+          <input
+            type="text"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="Enter a reason"
+          />
+        </label>
+
+        <div className="mod-actions">
+          <button type="button" onClick={() => handleAction("kick")} disabled={submitting}>
+            Kick
+          </button>
+          <button type="button" onClick={() => handleAction("respawn")} disabled={submitting}>
+            Respawn
+          </button>
+          <button type="button" onClick={() => handleAction("serverBan")} disabled={submitting}>
+            Server Ban
+          </button>
+          <button type="button" onClick={() => handleAction("globalBan")} disabled={submitting}>
+            Global Ban
+          </button>
+        </div>
+
+        <div className="mod-message">
+          <span className="muted small">Message Player</span>
+          <textarea
+            value={msg}
+            onChange={(e) => setMsg(e.target.value)}
+            placeholder={`Send a message to ${playerLabel}`}
+            rows={3}
+          />
+          <button type="button" onClick={() => handleAction("message")} disabled={submitting}>
+            Send Message
+          </button>
+        </div>
+
+        {error && (
+          <p className="mod-error" role="alert">
+            {error}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+};

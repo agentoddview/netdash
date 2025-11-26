@@ -271,6 +271,7 @@ const ServerDetailPage: React.FC = () => {
                   player={player}
                   avatarUrl={avatarUrl}
                   profileUrl={profileUrl}
+                  serverId={currentServer.serverId}
                   isHighlighted={highlightedPlayerId === player.userId}
                   selectedRef={highlightedPlayerId === player.userId ? selectedRowRef : null}
                   onSelect={() =>

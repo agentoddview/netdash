@@ -1,11 +1,13 @@
 import React from "react";
 import type { Player } from "./dashboard";
 import { getStaffHighlight } from "./dashboard";
+import { ModActionButton } from "./components/moderation/ModActionButton";
 
 type PlayerRowProps = {
   player: Player;
   avatarUrl: (userId: number) => string;
   profileUrl: (userId: number) => string;
+  serverId: string;
   isHighlighted?: boolean;
   onSelect?: () => void;
   selectedRef?: React.RefObject<HTMLDivElement | null> | null;
@@ -15,6 +17,7 @@ const PlayerRow: React.FC<PlayerRowProps> = ({
   player,
   avatarUrl,
   profileUrl,
+  serverId,
   isHighlighted,
   onSelect,
   selectedRef,
@@ -46,6 +49,9 @@ const PlayerRow: React.FC<PlayerRowProps> = ({
           </a>
           <p className="muted small">{player.displayName}</p>
         </div>
+      </div>
+      <div className="player-actions">
+        <ModActionButton player={player} serverId={serverId} />
       </div>
       <div className="player-tags">
         <span className="pill">{player.role || player.team || "-"}</span>

@@ -28,3 +28,109 @@ a {
 button {
   font-family: inherit;
 }
+
+.mod-btn {
+  background: transparent;
+  border: 1px solid #303b5c;
+  border-radius: 999px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 14px;
+  color: inherit;
+}
+
+.mod-btn:hover {
+  background: #1c2442;
+}
+
+.mod-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.mod-modal {
+  background: #0c1225;
+  border: 1px solid #1f2740;
+  border-radius: 12px;
+  padding: 16px;
+  width: min(420px, 100%);
+  color: #eaf0ff;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+  display: grid;
+  gap: 12px;
+}
+
+.mod-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.mod-close {
+  background: transparent;
+  border: 1px solid #303b5c;
+  color: #eaf0ff;
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+}
+
+.mod-field input,
+.mod-message textarea {
+  width: 100%;
+  background: #0b0f1e;
+  border: 1px solid #1f2740;
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: #eaf0ff;
+  margin-top: 6px;
+}
+
+.mod-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px;
+}
+
+.mod-actions button,
+.mod-message button {
+  background: #1c2442;
+  border: 1px solid #303b5c;
+  border-radius: 10px;
+  padding: 10px;
+  color: #eaf0ff;
+  cursor: pointer;
+}
+
+.mod-actions button:hover,
+.mod-message button:hover {
+  background: #253057;
+}
+
+.mod-message {
+  display: grid;
+  gap: 8px;
+}
+
+.mod-error {
+  color: #ffb5b5;
+  background: #31101a;
+  border: 1px solid #ff6b6b33;
+  padding: 8px 10px;
+  border-radius: 8px;
+  margin: 0;
+}
+
+.player-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
