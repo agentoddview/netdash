@@ -841,25 +841,7 @@ const MapView: React.FC<MapViewProps> = ({
                         <span className="muted small">{player.displayName}</span>
                       </div>
                         <div className="tooltip-row">
-                          <span
-                            className="pill"
-                            style={
-                              player.team === "Transit Police"
-                                ? {
-                                    backgroundColor: "rgba(0, 168, 255, 0.15)",
-                                    border: "1px solid #00A8FF",
-                                    color: "var(--text)",
-                                    WebkitTextStroke: "0.5px #00A8FF",
-                                  }
-                                : player.team === "Choosing"
-                                ? {
-                                    backgroundColor: "rgba(160, 160, 160, 0.15)",
-                                    border: "1px solid #A0A0A0",
-                                    color: "#A0A0A0",
-                                  }
-                                : undefined
-                            }
-                          >
+                          <span className="pill">
                             {player.role || player.team || "-"}
                           </span>
                           <span className="pill">{player.rank ?? "-"}</span>
