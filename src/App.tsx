@@ -1,38 +1,23 @@
-import { useEffect, useState } from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
 import DashboardPage from "./dashboard";
 import SettingsPage from "./SettingsPage";
 import ServersPage from "./ServersPage";
+import { ServerDetailPage } from "./ServerDetailPage";
 import AuthGate from "./AuthGate";
 import { ThemeProvider } from "./ThemeContext";
 
 export default function App() {
-  const [path, setPath] = useState(window.location.pathname);
-
-  useEffect(() => {
-    const onPop = () => setPath(window.location.pathname);
-    window.addEventListener("popstate", onPop);
-    return () => window.removeEventListener("popstate", onPop);
-  }, []);
-
-  const navigate = (to: string) => {
-    if (to === path) return;
-    window.history.pushState({}, "", to);
-    setPath(to);
-  };
-
-  const renderRoute = () => {
-    if (path === "/settings") {
-      return <SettingsPage onNavigate={navigate} currentPath={path} />;
-    }
-    if (path === "/servers") {
-      return <ServersPage onNavigate={navigate} currentPath={path} />;
-    }
-    return <DashboardPage onNavigate={navigate} currentPath={path} />;
-  };
-
   return (
     <ThemeProvider>
-      <AuthGate>{renderRoute()}</AuthGate>
+      <AuthGate>
+        <Routes>
+          <Route path="/" element={<DashboardPage />} />
+          <Route path="/servers" element={<ServersPage />} />
+          <Route path="/servers/:serverId" element={<ServerDetailPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </AuthGate>
     </ThemeProvider>
   );
 }

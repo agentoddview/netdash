@@ -1,14 +1,11 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "./AuthGate";
 import { globalStyles } from "./dashboard";
 
-type SettingsPageProps = {
-  onNavigate?: (path: string) => void;
-  currentPath?: string;
-};
-
-const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate }) => {
+const SettingsPage: React.FC = () => {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   if (!user) return null;
 
@@ -51,7 +48,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate }) => {
           <h1>Settings</h1>
         </div>
         <div className="header-right">
-          <button className="view-map" onClick={() => onNavigate?.("/")}>
+          <button className="view-map" onClick={() => navigate("/")}>
             Back to dashboard
           </button>
         </div>
@@ -109,3 +106,4 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate }) => {
 };
 
 export default SettingsPage;
+

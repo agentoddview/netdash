@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback, useRef } from "react";
 import netMap from "./assets/net-map.png";
 import { useAuth } from "./AuthGate";
 import { useTheme } from "./ThemeContext";
+import { NavLink, useNavigate } from "react-router-dom";
 
 type Summary = {
   onlineTotal: number;
@@ -85,12 +86,7 @@ export const getJoinUrl = (server: Server) => {
   return `roblox://experiences/start?placeId=${placeId}&gameInstanceId=${jobId}`;
 };
 
-type DashboardPageProps = {
-  onNavigate?: (path: string) => void;
-  currentPath?: string;
-};
-
-const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate, currentPath }) => {
+const DashboardPage: React.FC = () => {
   const [summary, setSummary] = useState<SummaryResponse | null>(null);
   const [playersState, setPlayersState] = useState<PlayersResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -105,6 +101,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate, currentPath }
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const navigate = useNavigate();
   const handleSelectPlayer = useCallback(
     (valueOrUpdater: number | null | ((prev: number | null) => number | null)) => {
       setHighlightedPlayerId((prev) =>
@@ -305,11 +302,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate, currentPath }
 
   const avatarSrc = user?.avatarUrl;
   const avatarFallback = user?.username?.charAt(0)?.toUpperCase() ?? "?";
-  const navItems = [
-    { label: "Main", path: "/" },
-    { label: "Servers", path: "/servers" },
-  ];
-
   return (
     <div className="dashboard">
       <style>{globalStyles}</style>
@@ -318,15 +310,12 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate, currentPath }
           <p className="eyebrow">Network Dashboard</p>
           <h1>Operations Pulse</h1>
           <div className="top-nav">
-            {navItems.map((item) => (
-              <button
-                key={item.path}
-                className={`nav-link ${currentPath === item.path ? "nav-link--active" : ""}`}
-                onClick={() => onNavigate?.(item.path)}
-              >
-                {item.label}
-              </button>
-            ))}
+            <NavLink to="/" className={({ isActive }) => `nav-link ${isActive ? "nav-link--active" : ""}`}>
+              Main
+            </NavLink>
+            <NavLink to="/servers" className={({ isActive }) => `nav-link ${isActive ? "nav-link--active" : ""}`}>
+              Servers
+            </NavLink>
           </div>
         </div>
         <div className="header-right">
@@ -357,7 +346,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate, currentPath }
                   className="account-item"
                   onClick={() => {
                     setIsAccountOpen(false);
-                    onNavigate?.("/settings");
+                    navigate("/settings");
                   }}
                 >
                   Settings
@@ -568,7 +557,7 @@ const StatCard: React.FC<{ label: string; value: number | string; accent: string
   );
 };
 
-type MapViewProps = {
+export type MapViewProps = {
   servers: Server[];
   selectedServerId: string | null;
   highlightedPlayerId: number | null;
@@ -590,7 +579,7 @@ const teamColorPalette: Record<string, string> = {
 const TRANSIT_POLICE_COLOR = "#00A8FF";
 const CHOOSING_COLOR = "#A0A0A0";
 
-const MapView: React.FC<MapViewProps> = ({
+export const MapView: React.FC<MapViewProps> = ({
   servers,
   selectedServerId,
   onSelect,

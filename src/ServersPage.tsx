@@ -1,12 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
+import { NavLink, useNavigate } from "react-router-dom";
 
 import { globalStyles, shortenServerId, getJoinUrl } from "./dashboard";
 import type { Server, Player, GameState } from "./dashboard";
-
-type ServersPageProps = {
-  onNavigate?: (path: string) => void;
-  currentPath?: string;
-};
 
 type RoleRowProps = {
   label: string;
@@ -26,11 +22,12 @@ const RoleRow: React.FC<RoleRowProps> = ({ label, count, color }) => {
   );
 };
 
-const ServersPage: React.FC<ServersPageProps> = ({ onNavigate, currentPath }) => {
+const ServersPage: React.FC = () => {
   const [servers, setServers] = useState<Server[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const navigate = useNavigate();
 
   useEffect(() => {
     const load = async () => {
@@ -63,11 +60,6 @@ const ServersPage: React.FC<ServersPageProps> = ({ onNavigate, currentPath }) =>
     );
   }, [servers, search]);
 
-  const navItems = [
-    { label: "Main", path: "/" },
-    { label: "Servers", path: "/servers" },
-  ];
-
   const roleCounts = (players: Player[]) => {
     const busOperatorsCount = players.filter((p) => p.team === "Bus Operator").length;
     const transitPoliceCount = players.filter((p) => p.team === "Transit Police").length;
@@ -84,15 +76,12 @@ const ServersPage: React.FC<ServersPageProps> = ({ onNavigate, currentPath }) =>
           <p className="eyebrow">Network Dashboard</p>
           <h1>Our Servers</h1>
           <div className="top-nav">
-            {navItems.map((item) => (
-              <button
-                key={item.path}
-                className={`nav-link ${currentPath === item.path ? "nav-link--active" : ""}`}
-                onClick={() => onNavigate?.(item.path)}
-              >
-                {item.label}
-              </button>
-            ))}
+            <NavLink to="/" className={({ isActive }) => `nav-link ${isActive ? "nav-link--active" : ""}`}>
+              Main
+            </NavLink>
+            <NavLink to="/servers" className={({ isActive }) => `nav-link ${isActive ? "nav-link--active" : ""}`}>
+              Servers
+            </NavLink>
           </div>
         </div>
       </header>
@@ -104,7 +93,7 @@ const ServersPage: React.FC<ServersPageProps> = ({ onNavigate, currentPath }) =>
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <button aria-label="Search">🔍</button>
+        <button aria-label="Search">??</button>
       </div>
 
       {loading && <p className="muted">Loading servers...</p>}
@@ -123,7 +112,18 @@ const ServersPage: React.FC<ServersPageProps> = ({ onNavigate, currentPath }) =>
             const hasRoles =
               busOperatorsCount + transitPoliceCount + passengersCount + choosingCount > 0;
             return (
-              <div key={server.serverId} className="server-card-grid">
+              <div
+                key={server.serverId}
+                className="server-card-grid"
+                onClick={() => navigate(`/servers/${server.serverId}`)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    navigate(`/servers/${server.serverId}`);
+                  }
+                }}
+              >
                 <div className="server-card-grid-header">
                   <div>
                     <p className="muted small">Server</p>
@@ -132,7 +132,11 @@ const ServersPage: React.FC<ServersPageProps> = ({ onNavigate, currentPath }) =>
                   <div className="server-card-grid-actions">
                     <div className="pill">{totalPlayers} players</div>
                     {getJoinUrl(server) ? (
-                      <a className="join-button" href={getJoinUrl(server) ?? "#"}>
+                      <a
+                        className="join-button"
+                        href={getJoinUrl(server) ?? "#"}
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         Join
                       </a>
                     ) : null}
@@ -160,6 +164,13 @@ const ServersPage: React.FC<ServersPageProps> = ({ onNavigate, currentPath }) =>
 };
 
 export default ServersPage;
+
+
+
+
+
+
+
 
 
 
