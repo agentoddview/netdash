@@ -1,11 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-<<<<<<< HEAD
-import { globalStyles, shortenServerId, Server, Player, GameState, getJoinUrl } from "./dashboard";
-=======
 
 import { globalStyles, shortenServerId } from "./dashboard";
 import type { Server, Player, GameState } from "./dashboard";
->>>>>>> 680c83b50e716633a443092febd219e05c3d89c1
 
 type ServersPageProps = {
   onNavigate?: (path: string) => void;
