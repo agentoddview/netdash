@@ -73,7 +73,11 @@ const shortenServerId = (id: string) => {
   return value.length > 8 ? `${value.slice(0, 8)}...` : value;
 };
 
-const DashboardPage: React.FC = () => {
+type DashboardPageProps = {
+  onNavigate?: (path: string) => void;
+};
+
+const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
   const [summary, setSummary] = useState<SummaryResponse | null>(null);
   const [playersState, setPlayersState] = useState<PlayersResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -85,6 +89,7 @@ const DashboardPage: React.FC = () => {
   const contentGridRef = useRef<HTMLDivElement | null>(null);
   const [highlightedPlayerId, setHighlightedPlayerId] = useState<number | null>(null);
   const [isMapFullscreen, setIsMapFullscreen] = useState(false);
+  const [isAccountOpen, setIsAccountOpen] = useState(false);
   const { user, logout } = useAuth();
   const handleSelectPlayer = useCallback(
     (valueOrUpdater: number | null | ((prev: number | null) => number | null)) => {
@@ -294,6 +299,9 @@ const DashboardPage: React.FC = () => {
     selectedRowRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [highlightedPlayerId]);
 
+  const avatarSrc = user?.avatarUrl;
+  const avatarFallback = user?.username?.charAt(0)?.toUpperCase() ?? "?";
+
   return (
     <div className="dashboard">
       <style>{globalStyles}</style>
@@ -302,9 +310,48 @@ const DashboardPage: React.FC = () => {
           <p className="eyebrow">Network Dashboard</p>
           <h1>Operations Pulse</h1>
         </div>
-        <div className="status-chip">
-          <span className="dot" />
-          {loading ? "Syncing" : "Live"}
+        <div className="header-right">
+          <div className="status-chip">
+            <span className="dot" />
+            {loading ? "Syncing" : "Live"}
+          </div>
+          <div className="account-menu">
+            <button
+              className="account-trigger"
+              onClick={() => setIsAccountOpen((v) => !v)}
+              aria-haspopup="true"
+              aria-expanded={isAccountOpen}
+            >
+              {avatarSrc ? (
+                <img src={avatarSrc} alt={`${user?.username} avatar`} className="account-avatar" />
+              ) : (
+                <div className="avatar-fallback">{avatarFallback}</div>
+              )}
+              <span className="account-name">{user?.username}</span>
+            </button>
+            {isAccountOpen && (
+              <div className="account-dropdown">
+                <button
+                  className="account-item"
+                  onClick={() => {
+                    setIsAccountOpen(false);
+                    onNavigate?.("/settings");
+                  }}
+                >
+                  Settings
+                </button>
+                <button
+                  className="account-item"
+                  onClick={() => {
+                    setIsAccountOpen(false);
+                    logout();
+                  }}
+                >
+                  Log out
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
@@ -876,7 +923,7 @@ const MapView: React.FC<MapViewProps> = ({
   return mapContent;
 };
 
-const globalStyles = `
+export const globalStyles = `
   @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
   :root {
@@ -955,6 +1002,80 @@ const globalStyles = `
     border-radius: 50%;
     background: linear-gradient(120deg, #4ad295, #2ea17c);
     box-shadow: 0 0 12px #2ea17c;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .account-menu {
+    position: relative;
+  }
+
+  .account-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 999px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--text);
+    cursor: pointer;
+    box-shadow: var(--shadow);
+  }
+
+  .account-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid var(--border);
+  }
+
+  .avatar-fallback {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: #1f2740;
+    border: 1px solid var(--border);
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .account-name {
+    font-weight: 600;
+  }
+
+  .account-dropdown {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 8px);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    min-width: 160px;
+    z-index: 50;
+  }
+
+  .account-item {
+    width: 100%;
+    padding: 10px 12px;
+    background: transparent;
+    color: var(--text);
+    border: none;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .account-item:hover {
+    background: rgba(255,255,255,0.05);
   }
 
   .stats {
@@ -1428,6 +1549,62 @@ const globalStyles = `
 
   .small {
     font-size: 12px;
+  }
+
+  .profile-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .profile-avatar {
+    width: 90px;
+    height: 90px;
+    border-radius: 20px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    background: #0b0f1e;
+    display: grid;
+    place-items: center;
+  }
+
+  .profile-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .profile-meta h2 {
+    margin: 0;
+  }
+
+  .permissions-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .permission-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: rgba(255,255,255,0.03);
+  }
+
+  .permission-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .avatar-fallback.large {
+    width: 100%;
+    height: 100%;
+    border-radius: 20px;
+    font-size: 32px;
   }
 
   .alert {
