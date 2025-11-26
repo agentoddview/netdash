@@ -86,27 +86,45 @@ export const getJoinUrl = (server: Server) => {
   return `roblox://experiences/start?placeId=${placeId}&gameInstanceId=${jobId}`;
 };
 
+export const getRoleFromRank = (rank?: string | number | null): string | null => {
+  const numeric = typeof rank === "number" ? rank : Number(rank);
+  if (Number.isFinite(numeric)) {
+    if (numeric >= 235 && numeric <= 255) return "Administration";
+    if (numeric === 123) return "Lead Supervisor";
+    if (numeric >= 121 && numeric <= 122) return "Supervisor";
+  }
+
+  const r = String(rank ?? "").toLowerCase();
+  if (!r) return null;
+  if (r.includes("administration") || r.includes("admin")) return "Administration";
+  if (r.includes("lead supervisor")) return "Lead Supervisor";
+  if (r.includes("supervisor")) return "Supervisor";
+  if (r.includes("founder")) return "Founder";
+  if (r.includes("chief of staff")) return "Chief of Staff";
+  if (r.includes("developer")) return "Developer";
+  return null;
+};
+
 export const getStaffHighlight = (rank?: string | null): { color?: string; icon?: string } => {
-  if (!rank) return {};
-  const r = rank.toLowerCase();
-  if (r.includes("founder")) {
+  const role = getRoleFromRank(rank);
+  if (!role) return {};
+
+  if (role === "Administration" || role === "Founder") {
     return { color: "#ef4444", icon: "👑" };
   }
-  if (r.includes("chief of staff")) {
+  if (role === "Chief of Staff") {
     return { color: "#38bdf8", icon: "👔" };
   }
-  if (r.includes("developer")) {
-    return { color: "#f97316", icon: "🔨" };
+  if (role === "Developer") {
+    return { color: "#f97316", icon: "🔧" };
   }
-  if (r.includes("lead supervisor")) {
+  if (role === "Lead Supervisor") {
     return { color: "#22c55e", icon: "🛡" };
   }
-  if (r.includes("senior supervisor")) {
+  if (role === "Supervisor") {
     return { color: "#22c55e", icon: "🛡" };
   }
-  if (r.includes("supervisor")) {
-    return { color: "#22c55e", icon: "🛡" };
-  }
+
   return {};
 };
 
