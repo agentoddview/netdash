@@ -848,7 +848,7 @@ const MapView: React.FC<MapViewProps> = ({
                                 ? {
                                     backgroundColor: "rgba(0, 168, 255, 0.15)",
                                     border: "1px solid #00A8FF",
-                                    color: "#00A8FF",
+                                    color: "var(--text)",
                                   }
                                 : player.team === "Choosing"
                                 ? {
