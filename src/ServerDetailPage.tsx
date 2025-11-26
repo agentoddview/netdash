@@ -3,10 +3,10 @@ import { NavLink, useNavigate, useParams } from "react-router-dom";
 import { MapView, globalStyles, shortenServerId, getJoinUrl, type GameState, type Server, type Player } from "./dashboard";
 import { useAuth } from "./AuthGate";
 import { useTheme } from "./ThemeContext";
+import PlayerRow from "./PlayerRow";
+import { useAvatarMap } from "./useAvatarMap";
 
 const API_BASE = import.meta.env.VITE_API_URL;
-const headshotApiUrl = (userId: number) => `${API_BASE}/proxy/avatar/${userId}`;
-
 const ServerDetailPage: React.FC = () => {
   const { serverId: routeServerId } = useParams<{ serverId: string }>();
   const navigate = useNavigate();
@@ -123,7 +123,7 @@ const ServerDetailPage: React.FC = () => {
 
   const playersWithServer: Player[] = currentServer?.players || [];
 
-  const avatarUrl = (userId: number) => headshotApiUrl(userId);
+  const { avatarUrl } = useAvatarMap(playersWithServer);
   const profileUrl = (userId: number) => `https://www.roblox.com/users/${userId}/profile`;
 
   if (loading) {
@@ -248,7 +248,7 @@ const ServerDetailPage: React.FC = () => {
               <p className="muted small">Server</p>
               <h2>{shortenServerId(currentServer.serverId)}</h2>
               <p className="muted small">
-                {playersWithServer.length} players ? Last updated {currentServer.updatedAt}
+                {playersWithServer.length} players • Last updated {currentServer.updatedAt}
               </p>
             </div>
             <div className="server-actions">
@@ -264,44 +264,19 @@ const ServerDetailPage: React.FC = () => {
           </div>
           <div className="player-list">
             {playersWithServer.length > 0 ? (
-              playersWithServer.map((player) => {
-                const isHighlighted = highlightedPlayerId === player.userId;
-                return (
-                  <div
-                    className={`player-row ${isHighlighted ? "player-row--selected" : ""}`}
-                    key={`${currentServer.serverId}-${player.userId}`}
-                    ref={isHighlighted ? selectedRowRef : undefined}
-                    onClick={() =>
-                      handleSelectPlayer((current) => (current === player.userId ? null : player.userId))
-                    }
-                  >
-                    <div className="player-main">
-                      <img
-                        src={avatarUrl(player.userId)}
-                        alt={`${player.username} avatar`}
-                        className="avatar"
-                      />
-                      <div>
-                        <a
-                          href={profileUrl(player.userId)}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="username-link"
-                        >
-                          {player.username}
-                        </a>
-                        <p className="muted small">{player.displayName}</p>
-                      </div>
-                    </div>
-                    <div className="player-tags">
-                      <span className="pill">{player.role || player.team || "-"}</span>
-                      <span className="pill">{player.rank ?? "-"}</span>
-                      <span className="pill">Miles {player.miles ?? 0}</span>
-                      <span className="pill">Cash {player.cash ?? 0}</span>
-                    </div>
-                  </div>
-                );
-              })
+              playersWithServer.map((player) => (
+                <PlayerRow
+                  key={`${currentServer.serverId}-${player.userId}`}
+                  player={player}
+                  avatarUrl={avatarUrl}
+                  profileUrl={profileUrl}
+                  isHighlighted={highlightedPlayerId === player.userId}
+                  selectedRef={highlightedPlayerId === player.userId ? selectedRowRef : null}
+                  onSelect={() =>
+                    handleSelectPlayer((current) => (current === player.userId ? null : player.userId))
+                  }
+                />
+              ))
             ) : (
               <p className="muted">No players in this server.</p>
             )}

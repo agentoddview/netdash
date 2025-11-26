@@ -68,6 +68,30 @@ type AvatarProxyResponse = {
 const API_BASE = import.meta.env.VITE_API_URL;
 const headshotApiUrl = (userId: number) => `${API_BASE}/proxy/avatar/${userId}`;
 
+export const getStaffHighlight = (rank?: string | null): { color?: string; icon?: string } => {
+  if (!rank) return {};
+  const r = rank.toLowerCase();
+  if (r.includes("founder")) {
+    return { color: "#ef4444", icon: "ðŸ‘‘" };
+  }
+  if (r.includes("chief of staff")) {
+    return { color: "#38bdf8", icon: "ðŸ‘”" };
+  }
+  if (r.includes("developer")) {
+    return { color: "#f97316", icon: "ðŸ”¨" };
+  }
+  if (r.includes("lead supervisor")) {
+    return { color: "#22c55e", icon: "ðŸ›¡" };
+  }
+  if (r.includes("senior supervisor")) {
+    return { color: "#22c55e", icon: "ðŸ›¡" };
+  }
+  if (r.includes("supervisor")) {
+    return { color: "#22c55e", icon: "ðŸ›¡" };
+  }
+  return {};
+};
+
 export const shortenServerId = (id: string) => {
   if (!id) return "-";
   const [, jobId] = id.split(":");
@@ -250,505 +274,9 @@ const DashboardPage: React.FC = () => {
     e.preventDefault();
     setDragging(true);
   };
-  const roleEntries = summary?.onlineByRole ? Object.entries(summary.onlineByRole) : [];
+    const roleEntries = summary?.onlineByRole ? Object.entries(summary.onlineByRole) : [];
 
-  const getStaffHighlight = (rank?: string | null): { color?: string; icon?: string } => {
-    if (!rank) return {};
-    const r = rank.toLowerCase();
-    if (r.includes("founder")) {
-      return { color: "#ef4444", icon: "👑" };
-    }
-    if (r.includes("chief of staff")) {
-      return { color: "#38bdf8", icon: "👔" };
-    }
-    if (r.includes("developer")) {
-      return { color: "#f97316", icon: "🔨" };
-    }
-    if (r.includes("lead supervisor")) {
-      return { color: "#22c55e", icon: "🛡" };
-    }
-    if (r.includes("senior supervisor")) {
-      return { color: "#22c55e", icon: "🛡" };
-    }
-    if (r.includes("supervisor")) {
-      return { color: "#22c55e", icon: "🛡" };
-    }
-    return {};
-  };
-
-  useEffect(() => {
-    if (!dragging) return;
-    const onMove = (e: MouseEvent) => {
-      if (!contentGridRef.current) return;
-      const rect = contentGridRef.current.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const ratio = x / rect.width;
-      const clamped = Math.min(0.55, Math.max(0.18, ratio));
-      setSplit(clamped);
-    };
-    const onUp = () => setDragging(false);
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup", onUp);
-    return () => {
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", onUp);
-    };
-  }, [dragging]);
-
-  useEffect(() => {
-    if (!highlightedPlayerId || !selectedRowRef.current) return;
-    selectedRowRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
-  }, [highlightedPlayerId]);
-
-  const avatarSrc = user?.avatarUrl;
-  const avatarFallback = user?.username?.charAt(0)?.toUpperCase() ?? "?";
-  return (
-    <div className="dashboard">
-      <style>{globalStyles}</style>
-      <header className="header">
-        <div>
-          <p className="eyebrow">Network Dashboard</p>
-          <h1>Operations Pulse</h1>
-          <div className="top-nav">
-            <NavLink to="/" className={({ isActive }) => `nav-link ${isActive ? "nav-link--active" : ""}`}>
-              Main
-            </NavLink>
-            <NavLink to="/servers" className={({ isActive }) => `nav-link ${isActive ? "nav-link--active" : ""}`}>
-              Servers
-            </NavLink>
-          </div>
-        </div>
-        <div className="header-right">
-          <div className="status-chip">
-            <span className="dot" />
-            {loading ? "Syncing" : "Live"}
-          </div>
-          <div className="account-menu">
-            <button
-              className="account-trigger"
-              onClick={() => setIsAccountOpen((v) => !v)}
-              aria-haspopup="true"
-              aria-expanded={isAccountOpen}
-            >
-              {avatarSrc ? (
-                <img src={avatarSrc} alt={`${user?.username} avatar`} className="account-avatar" />
-              ) : (
-                <div className="avatar-fallback">{avatarFallback}</div>
-              )}
-              <span className="account-name">{user?.username}</span>
-            </button>
-            {isAccountOpen && (
-              <div className="account-dropdown">
-                <button className="account-item" onClick={toggleTheme}>
-                  {theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-                </button>
-                <button
-                  className="account-item"
-                  onClick={() => {
-                    setIsAccountOpen(false);
-                    navigate("/settings");
-                  }}
-                >
-                  Settings
-                </button>
-                <button
-                  className="account-item"
-                  onClick={() => {
-                    setIsAccountOpen(false);
-                    logout();
-                  }}
-                >
-                  Log out
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </header>
-
-      {error && <div className="alert">Error: {error}</div>}
-
-      <section className="stats">
-        <StatCard
-          label="Players Online"
-          value={summary?.onlineTotal ?? 0}
-          accent="var(--accent-green)"
-        />
-        <StatCard
-          label="Servers Online"
-          value={summary?.serversOnline ?? 0}
-          accent="var(--accent-blue)"
-        />
-        <StatCard
-          label="Last Updated"
-          value={formatDate(summary?.lastUpdated)}
-          accent="var(--accent-purple)"
-        />
-      </section>
-
-      <section className="panel">
-        <div className="panel-header">
-          <h2>Online by Role</h2>
-          <p className="muted">Snapshot of active roles across all servers.</p>
-        </div>
-        <div className="role-grid">
-          {roleEntries.length > 0 &&
-            roleEntries.map(([role, count]) => (
-              <div key={role} className="role-card">
-                <span className="role-name">{role}</span>
-                <span className="role-count">{count}</span>
-              </div>
-            ))}
-          {!loading && roleEntries.length === 0 && (
-            <p className="muted">No role data available.</p>
-          )}
-        </div>
-      </section>
-
-      <div
-        className="content-grid"
-        ref={contentGridRef}
-        style={{
-          gridTemplateColumns: `minmax(240px, ${split}fr) 12px minmax(0, ${(1 - split).toFixed(
-            2
-          )}fr)`,
-        }}
-      >
-        <section className="panel panel-servers">
-          <div className="panel-header">
-            <h2>Servers & Players</h2>
-            <p className="muted">Players grouped by the servers they are on.</p>
-          </div>
-          <div className="server-grid">
-            {loading && <p className="muted">Loading servers...</p>}
-            {!loading && (!playersState?.servers || playersState.servers.length === 0) && (
-              <p className="muted">No servers online right now.</p>
-            )}
-            {!loading &&
-              playersState?.servers?.map((server) => {
-                const joinUrl = getJoinUrl(server);
-                const isSelected = selectedServerId === server.serverId;
-                return (
-                  <div className={`server-card ${isSelected ? "server-card-selected" : ""}`} key={server.serverId}>
-                    <div className="server-header">
-                      <div>
-                        <p className="muted">Server</p>
-                        <h3>{shortenServerId(server.serverId)}</h3>
-                        <p className="muted small">Updated {formatDate(server.updatedAt)}</p>
-                      </div>
-                      <div className="server-actions">
-                        <button className="view-map" onClick={() => handleSelectServer(server.serverId)}>
-                          View Map
-                        </button>
-                        {joinUrl ? (
-                          <a className="join-button" href={joinUrl}>
-                            Join
-                          </a>
-                        ) : (
-                          <span className="muted small">Join unavailable</span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="player-list">
-                      {server.players && server.players.length > 0 ? (
-                        server.players.map((player) => {
-                          const isHighlighted = highlightedPlayerId === player.userId;
-                          const { color: usernameColor, icon: roleIcon } = getStaffHighlight(
-                            player.rank
-                          );
-                          return (
-                            <div
-                              className={`player-row ${
-                                isHighlighted ? "player-row--selected" : ""
-                              }`}
-                              key={`${server.serverId}-${player.userId}`}
-                              ref={isHighlighted ? selectedRowRef : undefined}
-                              onClick={() =>
-                                handleSelectPlayer((current) =>
-                                  current === player.userId ? null : player.userId
-                                )
-                              }
-                            >
-                              <div className="player-main">
-                                <img
-                                  src={avatarUrl(player.userId)}
-                                  alt={`${player.username} avatar`}
-                                  className="avatar"
-                              />
-                              <div>
-                                <a
-                                  href={profileUrl(player.userId)}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="username-link"
-                                  style={usernameColor ? { color: usernameColor } : undefined}
-                                >
-                                  {roleIcon && (
-                                    <span className="role-icon" aria-hidden="true">
-                                      {roleIcon}
-                                    </span>
-                                  )}
-                                  {player.username}
-                                </a>
-                                <p className="muted small">{player.displayName}</p>
-                              </div>
-                            </div>
-                              <div className="player-tags">
-                                <span className="pill">{player.role || player.team || "-"}</span>
-                                <span className="pill">{player.rank ?? "-"}</span>
-                                <span className="pill">Miles {player.miles ?? 0}</span>
-                                <span className="pill">Cash {player.cash ?? 0}</span>
-                              </div>
-                            </div>
-                          );
-                        })
-                      ) : (
-                        <p className="muted">No players in this server.</p>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-          </div>
-        </section>
-
-        <div
-          className={`resize-handle ${dragging ? "dragging" : ""}`}
-          onMouseDown={handleStartDrag}
-          role="separator"
-          aria-orientation="vertical"
-          aria-label="Resize panels"
-        />
-
-        <section className="panel map-panel">
-          <div className="panel-header">
-            <h2>Live Map</h2>
-            <p className="muted">Player positions (select server).</p>
-          </div>
-          <MapView
-            servers={playersState?.servers || []}
-            selectedServerId={selectedServerId}
-            onSelect={handleSelectServer}
-            highlightedPlayerId={highlightedPlayerId}
-            onSelectPlayer={handleSelectPlayer}
-            isFullscreen={isMapFullscreen}
-            onToggleFullscreen={() => setIsMapFullscreen((v) => !v)}
-            onExitFullscreen={() => setIsMapFullscreen(false)}
-          />
-        </section>
-      </div>
-    </div>
-  );
-};
-
-const StatCard: React.FC<{ label: string; value: number | string; accent: string }> = ({
-  label,
-  value,
-  accent,
-}) => {
-  return (
-    <div className="stat-card">
-      <div className="stat-indicator" style={{ background: accent }} />
-      <div>
-        <p className="muted">{label}</p>
-        <p className="stat-value">{value}</p>
-      </div>
-    </div>
-  );
-};
-
-export type MapViewProps = {
-  servers: Server[];
-  selectedServerId: string | null;
-  highlightedPlayerId: number | null;
-  onSelect: (id: string) => void;
-  onSelectPlayer?: (value: number | null | ((prev: number | null) => number | null)) => void;
-  isFullscreen?: boolean;
-  onToggleFullscreen?: () => void;
-  onExitFullscreen?: () => void;
-};
-
-const teamColorPalette: Record<string, string> = {
-  "Bus Operator": "#f0b232",
-  Choosing: "#6b8bff",
-  Civilian: "#7dd3fc",
-  Passenger: "#9cfab6",
-  "Transit Police": "#4ad295",
-};
-
-const TRANSIT_POLICE_COLOR = "#00A8FF";
-const CHOOSING_COLOR = "#A0A0A0";
-
-export const MapView: React.FC<MapViewProps> = ({
-  servers,
-  selectedServerId,
-  onSelect,
-  highlightedPlayerId,
-  onSelectPlayer,
-  isFullscreen = false,
-  onToggleFullscreen,
-  onExitFullscreen,
-}) => {
-  const [hovered, setHovered] = useState<number | null>(null);
-  const [zoom, setZoom] = useState(1);
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
-  const viewportRef = useRef<HTMLDivElement | null>(null);
-  type DotSize = "small" | "medium" | "large";
-  const DOT_SIZE_KEY = "net-dashboard.dotSize";
-  const ZOOM_TO_CURSOR_KEY = "net-dashboard.zoomToCursor";
-  const MIN_ZOOM = 0.5;
-  const MAX_ZOOM = 4;
-  const ZOOM_FACTOR = 1.1;
-  const [dotSize, setDotSize] = useState<DotSize>("medium");
-  const [showSettings, setShowSettings] = useState(false);
-  const [zoomToCursor, setZoomToCursor] = useState(true);
-  const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
-  const zoomRef = useRef(zoom);
-
-  const centerOffsetFor = useCallback(
-    (z: number, width?: number, height?: number) => {
-      const w = width ?? viewportSize.width;
-      const h = height ?? viewportSize.height;
-      if (!w || !h) return { x: 0, y: 0 };
-      return {
-        x: (w - w * z) / 2,
-        y: (h - h * z) / 2,
-      };
-    },
-    [viewportSize.width, viewportSize.height]
-  );
-
-  const zoomAtPoint = useCallback(
-    (factor: number, origin?: { x: number; y: number }) => {
-      const rect = viewportRef.current?.getBoundingClientRect();
-      const originX = origin?.x ?? (rect?.width ? rect.width / 2 : 0);
-      const originY = origin?.y ?? (rect?.height ? rect.height / 2 : 0);
-
-      setZoom((prevZoom) => {
-        const nextZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, prevZoom * factor));
-        const zoomRatio = nextZoom / prevZoom;
-        if (nextZoom === prevZoom) return prevZoom;
-
-        setOffset((prevOffset) => ({
-          x: originX - (originX - prevOffset.x) * zoomRatio,
-          y: originY - (originY - prevOffset.y) * zoomRatio,
-        }));
-
-        return nextZoom;
-      });
-    },
-    [MAX_ZOOM, MIN_ZOOM]
-  );
-
-  useEffect(() => {
-    if (!selectedServerId && servers[0]) {
-      onSelect(servers[0].serverId);
-    }
-  }, [servers, selectedServerId, onSelect]);
-
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(DOT_SIZE_KEY);
-      if (saved === "small" || saved === "medium" || saved === "large") {
-        setDotSize(saved);
-      }
-      const savedZoomToCursor = localStorage.getItem(ZOOM_TO_CURSOR_KEY);
-      if (savedZoomToCursor === "true") setZoomToCursor(true);
-      if (savedZoomToCursor === "false") setZoomToCursor(false);
-    } catch {
-      // ignore
-    }
-  }, []);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(DOT_SIZE_KEY, dotSize);
-      localStorage.setItem(ZOOM_TO_CURSOR_KEY, String(zoomToCursor));
-    } catch {
-      // ignore
-    }
-  }, [dotSize, zoomToCursor]);
-
-  useEffect(() => {
-    const el = viewportRef.current;
-    if (!el) return;
-
-    const updateSize = () =>
-      setViewportSize({ width: el.clientWidth, height: el.clientHeight });
-
-    updateSize();
-    const observer = new ResizeObserver(updateSize);
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [isFullscreen]);
-
-  useEffect(() => {
-    zoomRef.current = zoom;
-  }, [zoom]);
-
-  useEffect(() => {
-    if (!viewportSize.width || !viewportSize.height) return;
-    setOffset(centerOffsetFor(zoomRef.current, viewportSize.width, viewportSize.height));
-  }, [viewportSize.width, viewportSize.height, isFullscreen, centerOffsetFor]);
-
-  useEffect(() => {
-    const el = viewportRef.current;
-    if (!el) return;
-
-    const handleWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const rect = el.getBoundingClientRect();
-      const originX = zoomToCursor ? e.clientX - rect.left : rect.width / 2;
-      const originY = zoomToCursor ? e.clientY - rect.top : rect.height / 2;
-      const zoomFactor = e.deltaY < 0 ? ZOOM_FACTOR : 1 / ZOOM_FACTOR;
-
-      zoomAtPoint(zoomFactor, { x: originX, y: originY });
-    };
-
-    el.addEventListener("wheel", handleWheel, { passive: false });
-    return () => {
-      el.removeEventListener("wheel", handleWheel);
-    };
-  }, [zoomToCursor, zoomAtPoint]);
-
-  useEffect(() => {
-    if (!isFullscreen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onExitFullscreen?.();
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [isFullscreen, onExitFullscreen]);
-
-  const currentServer = servers.find((s) => s.serverId === selectedServerId) || servers[0];
-  const playersWithPos =
-    currentServer?.players?.filter(
-      (p) => p.position?.mapX !== null && p.position?.mapY !== null
-    ) || [];
-
-  const colorFor = (player: Player) => {
-    if (player.team === "Transit Police") return TRANSIT_POLICE_COLOR;
-    if (player.team === "Choosing") return CHOOSING_COLOR;
-    if (player.teamColor) return player.teamColor;
-    return teamColorPalette[player.team] || "#6a6adf";
-  };
-
-  const handleDotClick = (player: Player) => {
-    if (!onSelectPlayer) return;
-    onSelectPlayer((current) => (current === player.userId ? null : player.userId));
-  };
-
-  const hasServers = servers.length > 0;
-  const dotSizePx = dotSize === "small" ? 8 : dotSize === "large" ? 14 : 11;
-  const viewportWidth = viewportSize.width || viewportRef.current?.clientWidth || 0;
-  const viewportHeight = viewportSize.height || viewportRef.current?.clientHeight || 0;
-
-  const mapContent = (
+const mapContent = (
     <div className="map-wrapper">
       <div className="map-toolbar">
         <label className="muted small" htmlFor="server-select">
@@ -871,7 +399,7 @@ export const MapView: React.FC<MapViewProps> = ({
           </div>
           <div className="map-controls">
             <button onClick={() => zoomAtPoint(ZOOM_FACTOR, { x: viewportWidth / 2, y: viewportHeight / 2 })}>+</button>
-            <button onClick={() => zoomAtPoint(1 / ZOOM_FACTOR, { x: viewportWidth / 2, y: viewportHeight / 2 })}>−</button>
+            <button onClick={() => zoomAtPoint(1 / ZOOM_FACTOR, { x: viewportWidth / 2, y: viewportHeight / 2 })}>âˆ’</button>
             <button
               onClick={() => {
                 setZoom(1);
@@ -879,16 +407,16 @@ export const MapView: React.FC<MapViewProps> = ({
               }}
               title="Reset view"
             >
-              ⟳
+              âŸ³
             </button>
             <button
               onClick={onToggleFullscreen}
               title={isFullscreen ? "Exit full screen" : "Full screen"}
             >
-              ⛶
+              â›¶
             </button>
             <button onClick={() => setShowSettings((v) => !v)} title="Map settings">
-              ⚙
+              âš™
             </button>
           </div>
           {showSettings && (
