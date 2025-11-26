@@ -4,7 +4,7 @@ import { useAuth } from "./AuthGate";
 
 type Summary = {
   onlineTotal: number;
-  onlineByRole: Record<string, number>;
+  onlineByRole?: Record<string, number>;
   serversOnline: number;
   lastUpdated: string | null;
 };
@@ -250,6 +250,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
     e.preventDefault();
     setDragging(true);
   };
+  const roleEntries = summary?.onlineByRole ? Object.entries(summary.onlineByRole) : [];
 
   const getStaffHighlight = (rank?: string | null): { color?: string; icon?: string } => {
     if (!rank) return {};
@@ -381,14 +382,16 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
           <p className="muted">Snapshot of active roles across all servers.</p>
         </div>
         <div className="role-grid">
-          {summary &&
-            Object.entries(summary.onlineByRole).map(([role, count]) => (
+          {roleEntries.length > 0 &&
+            roleEntries.map(([role, count]) => (
               <div key={role} className="role-card">
                 <span className="role-name">{role}</span>
                 <span className="role-count">{count}</span>
               </div>
             ))}
-          {!summary && !loading && <p className="muted">No role data available.</p>}
+          {!loading && roleEntries.length === 0 && (
+            <p className="muted">No role data available.</p>
+          )}
         </div>
       </section>
 
