@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { globalStyles, shortenServerId } from "./dashboard";
+import { globalStyles, shortenServerId, getJoinUrl } from "./dashboard";
 import type { Server, Player, GameState } from "./dashboard";
 
 type ServersPageProps = {
@@ -160,3 +160,8 @@ const ServersPage: React.FC<ServersPageProps> = ({ onNavigate, currentPath }) =>
 };
 
 export default ServersPage;
+
+
+
+
+
