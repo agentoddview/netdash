@@ -93,7 +93,7 @@ const ServersPage: React.FC = () => {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <button aria-label="Search">??</button>
+        <button aria-label="Search">🔍</button>
       </div>
 
       {loading && <p className="muted">Loading servers...</p>}
@@ -164,6 +164,9 @@ const ServersPage: React.FC = () => {
 };
 
 export default ServersPage;
+
+
+
 
 
 

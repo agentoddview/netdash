@@ -1,91 +1,130 @@
-
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams, NavLink } from "react-router-dom";
-import { MapView, globalStyles, shortenServerId, getJoinUrl } from "./dashboard";
-import type { GameState, Player, Server } from "./dashboard";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { NavLink, useNavigate, useParams } from "react-router-dom";
+import { MapView, globalStyles, shortenServerId, getJoinUrl, type GameState, type Server, type Player } from "./dashboard";
+import { useAuth } from "./AuthGate";
+import { useTheme } from "./ThemeContext";
 
 const API_BASE = import.meta.env.VITE_API_URL;
+const headshotApiUrl = (userId: number) => `${API_BASE}/proxy/avatar/${userId}`;
 
-export const ServerDetailPage: React.FC = () => {
-  const { serverId } = useParams<{ serverId: string }>();
+const ServerDetailPage: React.FC = () => {
+  const { serverId: routeServerId } = useParams<{ serverId: string }>();
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [playersState, setPlayersState] = useState<GameState | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [avatarMap, setAvatarMap] = useState<Record<number, string>>({});
-  const selectedServerId = serverId ?? null;
+  const [selectedServerId, setSelectedServerId] = useState<string | null>(routeServerId ?? null);
+  const [split, setSplit] = useState(0.32);
+  const [dragging, setDragging] = useState(false);
+  const contentGridRef = useRef<HTMLDivElement | null>(null);
   const [highlightedPlayerId, setHighlightedPlayerId] = useState<number | null>(null);
   const [isMapFullscreen, setIsMapFullscreen] = useState(false);
+  const [isAccountOpen, setIsAccountOpen] = useState(false);
+  const selectedRowRef = useRef<HTMLDivElement | null>(null);
+
+  const handleSelectPlayer = useCallback(
+    (valueOrUpdater: number | null | ((prev: number | null) => number | null)) => {
+      setHighlightedPlayerId((prev) =>
+        typeof valueOrUpdater === "function"
+          ? (valueOrUpdater as (p: number | null) => number | null)(prev)
+          : valueOrUpdater
+      );
+    },
+    []
+  );
 
   useEffect(() => {
+    let cancelled = false;
+    const controller = new AbortController();
+
     const load = async () => {
-      setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`${API_BASE}/dashboard/players`, {
-          credentials: "include",
-          cache: "no-store",
-        });
-        if (!res.ok) throw new Error("Failed to load server data");
-        const data = (await res.json()) as GameState;
-        setPlayersState(data);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Failed to load server data");
+        const [summaryRes, playersRes] = await Promise.all([
+          fetch(`${API_BASE}/dashboard/summary`, {
+            signal: controller.signal,
+            cache: "no-store",
+            credentials: "include",
+          }),
+          fetch(`${API_BASE}/dashboard/players`, {
+            signal: controller.signal,
+            cache: "no-store",
+            credentials: "include",
+          }),
+        ]);
+
+        if (summaryRes.status === 401 || playersRes.status === 401) {
+          await logout();
+          return;
+        }
+
+        if (!summaryRes.ok || !playersRes.ok) {
+          throw new Error("Failed to load dashboard data");
+        }
+
+        const [, playersData] = (await Promise.all([summaryRes.json(), playersRes.json()])) as [
+          GameState["lastUpdated"],
+          GameState
+        ];
+
+        if (cancelled) return;
+        setPlayersState(playersData);
+        setSelectedServerId((prev) => prev ?? routeServerId ?? playersData?.servers?.[0]?.serverId ?? null);
+      } catch (err) {
+        if (cancelled) return;
+        const message = err instanceof Error ? err.message : "Unknown error";
+        setError(message);
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
+
     load();
-  }, []);
+    const interval = setInterval(load, 5000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+      controller.abort();
+    };
+  }, [logout, routeServerId]);
+
+  useEffect(() => {
+    if (!highlightedPlayerId || !selectedRowRef.current) return;
+    selectedRowRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [highlightedPlayerId]);
+
+  useEffect(() => {
+    if (!dragging) return;
+    const onMove = (e: MouseEvent) => {
+      if (!contentGridRef.current) return;
+      const rect = contentGridRef.current.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const ratio = x / rect.width;
+      const clamped = Math.min(0.55, Math.max(0.18, ratio));
+      setSplit(clamped);
+    };
+    const onUp = () => setDragging(false);
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+  }, [dragging]);
 
   const currentServer = useMemo<Server | undefined>(() => {
     if (!playersState) return undefined;
-    return playersState.servers.find((s) => s.serverId === selectedServerId || s.serverId === serverId);
-  }, [playersState, selectedServerId, serverId]);
+    return playersState.servers.find((s) => s.serverId === (selectedServerId ?? routeServerId));
+  }, [playersState, selectedServerId, routeServerId]);
 
-  const players: Player[] = currentServer?.players || [];
+  const playersWithServer: Player[] = currentServer?.players || [];
 
-  const headshotApiUrl = (uid: number) => `${API_BASE}/proxy/avatar/${uid}`;
-  const profileUrl = (uid: number) => `https://www.roblox.com/users/${uid}/profile`;
-
-  useEffect(() => {
-    if (!players.length) return;
-    const userIds = Array.from(
-      new Set(players.map((p) => p.userId).filter(Boolean).filter((id) => avatarMap[id] === undefined))
-    );
-    if (userIds.length === 0) return;
-    let cancelled = false;
-    const load = async () => {
-      const entries = await Promise.all(
-        userIds.map(async (id) => {
-          try {
-            const res = await fetch(headshotApiUrl(id), {
-              cache: "no-store",
-              credentials: "include",
-              headers: { accept: "application/json" },
-            });
-            if (!res.ok) return [id, null] as const;
-            const json = (await res.json()) as { imageUrl?: string };
-            return [id, json.imageUrl || null] as const;
-          } catch {
-            return [id, null] as const;
-          }
-        })
-      );
-      if (cancelled) return;
-      const next: Record<number, string> = {};
-      entries.forEach(([id, url]) => {
-        if (url) next[id] = url;
-      });
-      if (Object.keys(next).length) setAvatarMap((prev) => ({ ...prev, ...next }));
-    };
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [players, avatarMap]);
-
-  const hasRoles = players.length > 0;
+  const avatarUrl = (userId: number) => headshotApiUrl(userId);
+  const profileUrl = (userId: number) => `https://www.roblox.com/users/${userId}/profile`;
 
   if (loading) {
     return (
@@ -135,7 +174,7 @@ export const ServerDetailPage: React.FC = () => {
       <header className="header">
         <div>
           <p className="eyebrow">Network Dashboard</p>
-          <h1>Server {shortenServerId(currentServer.serverId)}</h1>
+          <h1>Operations Pulse</h1>
           <div className="top-nav">
             <NavLink to="/" className={({ isActive }) => `nav-link ${isActive ? "nav-link--active" : ""}`}>
               Main
@@ -147,75 +186,150 @@ export const ServerDetailPage: React.FC = () => {
               Servers
             </NavLink>
           </div>
-          <p className="muted small">{players.length} players • Last updated {currentServer.updatedAt}</p>
         </div>
         <div className="header-right">
-          <button className="view-map" onClick={() => navigate("/servers")}>
-            Back to Servers
-          </button>
-          {getJoinUrl(currentServer) && (
-            <a className="join-button" href={getJoinUrl(currentServer) ?? "#"}>
-              Join
-            </a>
-          )}
+          <div className="status-chip">
+            <span className="dot" />
+            {loading ? "Syncing" : "Live"}
+          </div>
+          <div className="account-menu">
+            <button
+              className="account-trigger"
+              onClick={() => setIsAccountOpen((v) => !v)}
+              aria-haspopup="true"
+              aria-expanded={isAccountOpen}
+            >
+              {user?.avatarUrl ? (
+                <img src={user.avatarUrl} alt={`${user.username} avatar`} className="account-avatar" />
+              ) : (
+                <div className="avatar-fallback">{user?.username?.charAt(0)?.toUpperCase() ?? "?"}</div>
+              )}
+              <span className="account-name">{user?.username}</span>
+            </button>
+            {isAccountOpen && (
+              <div className="account-dropdown">
+                <button className="account-item" onClick={toggleTheme}>
+                  {theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+                </button>
+                <button
+                  className="account-item"
+                  onClick={() => {
+                    setIsAccountOpen(false);
+                    navigate("/settings");
+                  }}
+                >
+                  Settings
+                </button>
+                <button
+                  className="account-item"
+                  onClick={() => {
+                    setIsAccountOpen(false);
+                    logout();
+                  }}
+                >
+                  Log out
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
-      <div className="content-grid" style={{ gridTemplateColumns: "minmax(300px, 0.35fr) 12px minmax(0, 0.65fr)" }}>
+      <div
+        className="content-grid"
+        ref={contentGridRef}
+        style={{
+          gridTemplateColumns: `minmax(240px, ${split}fr) 12px minmax(0, ${(1 - split).toFixed(2)}fr)`,
+        }}
+      >
         <section className="panel panel-servers">
           <div className="panel-header">
-            <h2>Players</h2>
-            <p className="muted">Players currently on this server.</p>
+            <div>
+              <p className="muted small">Server</p>
+              <h2>{shortenServerId(currentServer.serverId)}</h2>
+              <p className="muted small">
+                {playersWithServer.length} players ? Last updated {currentServer.updatedAt}
+              </p>
+            </div>
+            <div className="server-actions">
+              <button className="view-map" onClick={() => navigate("/servers")}>
+                Back
+              </button>
+              {getJoinUrl(currentServer) ? (
+                <a className="join-button" href={getJoinUrl(currentServer) ?? "#"}>
+                  Join
+                </a>
+              ) : null}
+            </div>
           </div>
           <div className="player-list">
-            {hasRoles ? (
-              players.map((player) => (
-                <div className="player-row" key={player.userId}>
-                  <div className="player-main">
-                    <img
-                      src={avatarMap[player.userId] || headshotApiUrl(player.userId)}
-                      alt={`${player.username} avatar`}
-                      className="avatar"
-                    />
-                    <div>
-                      <a
-                        href={profileUrl(player.userId)}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="username-link"
-                      >
-                        {player.username}
-                      </a>
-                      <p className="muted small">{player.displayName}</p>
+            {playersWithServer.length > 0 ? (
+              playersWithServer.map((player) => {
+                const isHighlighted = highlightedPlayerId === player.userId;
+                return (
+                  <div
+                    className={`player-row ${isHighlighted ? "player-row--selected" : ""}`}
+                    key={`${currentServer.serverId}-${player.userId}`}
+                    ref={isHighlighted ? selectedRowRef : undefined}
+                    onClick={() =>
+                      handleSelectPlayer((current) => (current === player.userId ? null : player.userId))
+                    }
+                  >
+                    <div className="player-main">
+                      <img
+                        src={avatarUrl(player.userId)}
+                        alt={`${player.username} avatar`}
+                        className="avatar"
+                      />
+                      <div>
+                        <a
+                          href={profileUrl(player.userId)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="username-link"
+                        >
+                          {player.username}
+                        </a>
+                        <p className="muted small">{player.displayName}</p>
+                      </div>
+                    </div>
+                    <div className="player-tags">
+                      <span className="pill">{player.role || player.team || "-"}</span>
+                      <span className="pill">{player.rank ?? "-"}</span>
+                      <span className="pill">Miles {player.miles ?? 0}</span>
+                      <span className="pill">Cash {player.cash ?? 0}</span>
                     </div>
                   </div>
-                  <div className="player-tags">
-                    <span className="pill">{player.role || player.team || "-"}</span>
-                    <span className="pill">{player.rank ?? "-"}</span>
-                    <span className="pill">Miles {player.miles ?? 0}</span>
-                    <span className="pill">Cash {player.cash ?? 0}</span>
-                  </div>
-                </div>
-              ))
+                );
+              })
             ) : (
               <p className="muted">No players in this server.</p>
             )}
           </div>
         </section>
 
-        <div className="resize-handle" aria-hidden />
+        <div
+          className={`resize-handle ${dragging ? "dragging" : ""}`}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            setDragging(true);
+          }}
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize panels"
+        />
 
         <section className="panel map-panel">
           <div className="panel-header">
             <h2>Live Map</h2>
-            <p className="muted">Player positions.</p>
+            <p className="muted">Player positions (this server).</p>
           </div>
           <MapView
             servers={[currentServer]}
             selectedServerId={currentServer.serverId}
             onSelect={() => {}}
             highlightedPlayerId={highlightedPlayerId}
-            onSelectPlayer={setHighlightedPlayerId}
+            onSelectPlayer={handleSelectPlayer}
             isFullscreen={isMapFullscreen}
             onToggleFullscreen={() => setIsMapFullscreen((v) => !v)}
             onExitFullscreen={() => setIsMapFullscreen(false)}
