@@ -1,10 +1,9 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
-import { useAuth } from "./AuthGate";
+import { useAuth, type AuthUser } from "./AuthGate";
 import { useTheme } from "./ThemeContext";
 import { NavLink, useNavigate } from "react-router-dom";
 import LiveMap from "./LiveMap";
 import { ModActionButton } from "./components/moderation/ModActionButton";
-import type { AuthUser } from "./AuthGate";
 
 type Summary = {
   onlineTotal: number;
@@ -132,7 +131,7 @@ export const getStaffHighlight = (rank?: string | null): { color?: string; icon?
 };
 
 const DashboardPage: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, unlinkDiscord, unlinkRoblox } = useAuth();
   const [summary, setSummary] = useState<SummaryResponse | null>(null);
   const [playersState, setPlayersState] = useState<PlayersResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -171,7 +170,7 @@ const DashboardPage: React.FC = () => {
   }
 
   if (!user.permissions.canSeeDashboard) {
-    return <NoDashboardAccess user={user} />;
+    return <NoDashboardAccess user={user} onUnlinkDiscord={unlinkDiscord} onUnlinkRoblox={unlinkRoblox} />;
   }
 
   useEffect(() => {
@@ -1443,18 +1442,55 @@ export const globalStyles = `
   }
 `;
 
-const NoDashboardAccess: React.FC<{ user: AuthUser }> = ({ user }) => {
-  const discordTag =
-    user.discord?.username && user.discord?.discriminator
-      ? `${user.discord.username}#${user.discord.discriminator}`
-      : user.discord?.username || "Discord not linked";
+type AccessProps = {
+  user: AuthUser;
+  onUnlinkDiscord: () => Promise<void>;
+  onUnlinkRoblox: () => Promise<void>;
+};
+
+const NoDashboardAccess: React.FC<AccessProps> = ({ user, onUnlinkDiscord, onUnlinkRoblox }) => {
+  const [unlinkingDiscord, setUnlinkingDiscord] = useState(false);
+  const [unlinkingRoblox, setUnlinkingRoblox] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const discordDisplay =
+    user.discordServerDisplayName ||
+    user.discordGlobalName ||
+    user.discordUsername ||
+    "Discord not linked";
+  const discordHandle = user.discordUsername ? `@${user.discordUsername}` : "Not linked";
   const discordLoginUrl = `${API_BASE_URL}/auth/discord/login`;
+  const robloxLoginUrl = `${API_BASE_URL}/auth/roblox/login`;
   const canLinkDiscord = user.permissions.hasRoblox && !user.permissions.hasDiscord;
   const shouldShowPurchaseMessage =
     !user.permissions.canModerate &&
     !user.permissions.isAdmin &&
     !user.permissions.isSupervisor &&
     !user.permissions.hasDashboardRole;
+
+  const handleUnlinkDiscord = async () => {
+    setError(null);
+    setUnlinkingDiscord(true);
+    try {
+      await onUnlinkDiscord();
+    } catch {
+      setError("Failed to unlink Discord, please try again.");
+    } finally {
+      setUnlinkingDiscord(false);
+    }
+  };
+
+  const handleUnlinkRoblox = async () => {
+    setError(null);
+    setUnlinkingRoblox(true);
+    try {
+      await onUnlinkRoblox();
+    } catch {
+      setError("Failed to unlink Roblox, please try again.");
+    } finally {
+      setUnlinkingRoblox(false);
+    }
+  };
 
   return (
     <div className="dashboard">
@@ -1500,18 +1536,52 @@ const NoDashboardAccess: React.FC<{ user: AuthUser }> = ({ user }) => {
               <p className="muted small">Roblox</p>
               <div className="pill">{user.permissions.hasRoblox ? user.username : "Not linked"}</div>
             </div>
+            <div className="permission-status" style={{ gap: 8 }}>
+              {user.permissions.hasRoblox ? (
+                <>
+                  <button className="view-map" onClick={() => (window.location.href = robloxLoginUrl)}>
+                    Change
+                  </button>
+                  <button
+                    className="view-map"
+                    onClick={handleUnlinkRoblox}
+                    disabled={unlinkingRoblox}
+                    style={{ background: "transparent" }}
+                  >
+                    Unlink
+                  </button>
+                </>
+              ) : (
+                <button className="join-button" onClick={() => (window.location.href = robloxLoginUrl)}>
+                  Link Roblox
+                </button>
+              )}
+            </div>
           </div>
           <div className="permission-row">
             <div>
               <p className="muted small">Discord</p>
-              <div className="pill">{user.permissions.hasDiscord ? discordTag : "Not linked"}</div>
+              <div className="pill">{user.permissions.hasDiscord ? discordDisplay : "Not linked"}</div>
               <p className="muted small" style={{ marginTop: 6 }}>
-                Roles: {user.discord?.roles?.length ? user.discord.roles.join(", ") : "None detected"}
+                {discordHandle}
               </p>
             </div>
-            <div className="permission-status">
+            <div className="permission-status" style={{ gap: 8, flexWrap: "wrap" }}>
               {user.permissions.hasDiscord ? (
-                <span className="pill">Linked</span>
+                <>
+                  <button className="view-map" onClick={() => (window.location.href = discordLoginUrl)}>
+                    Change
+                  </button>
+                  <button
+                    className="view-map"
+                    type="button"
+                    onClick={handleUnlinkDiscord}
+                    disabled={unlinkingDiscord}
+                    style={{ background: "transparent" }}
+                  >
+                    Unlink
+                  </button>
+                </>
               ) : (
                 <button
                   className="view-map"
@@ -1527,6 +1597,11 @@ const NoDashboardAccess: React.FC<{ user: AuthUser }> = ({ user }) => {
             </div>
           </div>
         </div>
+        {error && (
+          <p className="mod-error" role="alert" style={{ marginTop: 12 }}>
+            {error}
+          </p>
+        )}
       </section>
     </div>
   );

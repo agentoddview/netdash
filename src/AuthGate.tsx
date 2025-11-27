@@ -12,20 +12,16 @@ type Permissions = {
   canModerate: boolean;
 };
 
-type DiscordProfile = {
-  id: string | null;
-  username: string | null;
-  discriminator: string | null;
-  avatar: string | null;
-  roles: string[];
-};
-
 export type AuthUser = {
   robloxUserId: number;
   username: string;
   displayName: string;
   avatarUrl: string | null;
-  discord: DiscordProfile;
+  discordUserId: string | null;
+  discordUsername: string | null;
+  discordGlobalName: string | null;
+  discordServerDisplayName: string | null;
+  discordAvatarUrl: string | null;
   permissions: Permissions;
 };
 
@@ -35,6 +31,8 @@ type AuthContextValue = {
   loading: boolean;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
+  unlinkDiscord: () => Promise<void>;
+  unlinkRoblox: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -72,6 +70,14 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     refresh();
   }, []);
 
+  const postAndRefresh = async (path: string) => {
+    await fetch(`${API_BASE}${path}`, {
+      method: "POST",
+      credentials: "include",
+    });
+    await refresh();
+  };
+
   const logout = async () => {
     try {
       await fetch(`${API_BASE}/auth/logout`, {
@@ -99,7 +105,17 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   }
 
   return (
-    <AuthContext.Provider value={{ user, authenticated, loading: false, logout, refresh }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        authenticated,
+        loading: false,
+        logout,
+        refresh,
+        unlinkDiscord: () => postAndRefresh("/auth/unlink/discord"),
+        unlinkRoblox: () => postAndRefresh("/auth/unlink/roblox"),
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
