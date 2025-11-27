@@ -69,7 +69,7 @@ type AvatarProxyResponse = {
 
 const API_BASE = import.meta.env.VITE_API_URL;
 const headshotApiUrl = (userId: number) => `${API_BASE}/proxy/avatar/${userId}`;
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://api.netransit.net";
 
 export const shortenServerId = (id: string) => {
   if (!id) return "-";
