@@ -12,16 +12,23 @@ type Permissions = {
   canModerate: boolean;
 };
 
+type DiscordProfile = {
+  id: string | null;
+  username: string | null;
+  globalName: string | null;
+  discriminator: string | null;
+  serverDisplayName: string | null;
+  avatar: string | null;
+  avatarUrl: string | null;
+  roles: string[];
+};
+
 export type AuthUser = {
   robloxUserId: number;
   username: string;
   displayName: string;
   avatarUrl: string | null;
-  discordUserId: string | null;
-  discordUsername: string | null;
-  discordGlobalName: string | null;
-  discordServerDisplayName: string | null;
-  discordAvatarUrl: string | null;
+  discord: DiscordProfile | null;
   permissions: Permissions;
 };
 

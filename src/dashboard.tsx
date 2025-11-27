@@ -1453,12 +1453,13 @@ const NoDashboardAccess: React.FC<AccessProps> = ({ user, onUnlinkDiscord, onUnl
   const [unlinkingRoblox, setUnlinkingRoblox] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const discordProfile = user.discord;
   const discordDisplay =
-    user.discordServerDisplayName ||
-    user.discordGlobalName ||
-    user.discordUsername ||
+    discordProfile?.serverDisplayName ||
+    discordProfile?.globalName ||
+    discordProfile?.username ||
     "Discord not linked";
-  const discordHandle = user.discordUsername ? `@${user.discordUsername}` : "Not linked";
+  const discordHandle = discordProfile?.username ? `@${discordProfile.username}` : "Not linked";
   const discordLoginUrl = `${API_BASE_URL}/auth/discord/login`;
   const robloxLoginUrl = `${API_BASE_URL}/auth/roblox/login`;
   const canLinkDiscord = user.permissions.hasRoblox && !user.permissions.hasDiscord;

@@ -14,15 +14,18 @@ const SettingsPage: React.FC = () => {
 
   if (!user) return null;
 
+  const discordProfile = user.discord;
   const robloxLinked = !!user.robloxUserId;
   const robloxLoginUrl = `${API_BASE_URL}/auth/roblox/login`;
   const discordLoginUrl = `${API_BASE_URL}/auth/discord/login`;
   const discordDisplay =
-    user.discordServerDisplayName ||
-    user.discordGlobalName ||
-    user.discordUsername ||
+    discordProfile?.serverDisplayName ||
+    discordProfile?.globalName ||
+    discordProfile?.username ||
     "Discord not linked";
-  const discordHandle = user.discordUsername ? `@${user.discordUsername}` : "Not linked";
+  const discordHandle = discordProfile?.username ? `@${discordProfile.username}` : "Not linked";
+  const discordAvatarUrl = discordProfile?.avatarUrl ?? null;
+  const discordLinked = !!discordProfile?.id;
 
   const handleUnlinkDiscord = async () => {
     setError(null);
@@ -113,8 +116,8 @@ const SettingsPage: React.FC = () => {
 
           <div className="permission-row" style={{ alignItems: "center", gap: 12 }}>
             <div className="profile-avatar" style={{ width: 70, height: 70 }}>
-              {user.discordAvatarUrl ? (
-                <img src={user.discordAvatarUrl} alt={`${discordDisplay} avatar`} />
+              {discordAvatarUrl ? (
+                <img src={discordAvatarUrl} alt={`${discordDisplay} avatar`} />
               ) : (
                 <div className="avatar-fallback large">
                   {(discordDisplay?.charAt(0) || "?").toUpperCase()}
@@ -127,11 +130,11 @@ const SettingsPage: React.FC = () => {
                 {discordHandle}
               </p>
               <p className="muted small" style={{ margin: "4px 0 0 0" }}>
-                {user.discordUserId ? "Linked" : "Not linked"}
+                {discordLinked ? "Linked" : "Not linked"}
               </p>
             </div>
             <div className="permission-status" style={{ gap: 8, flexWrap: "wrap" }}>
-              {user.discordUserId ? (
+              {discordLinked ? (
                 <>
                   <button
                     className="view-map"
