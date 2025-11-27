@@ -69,6 +69,7 @@ type AvatarProxyResponse = {
 
 const API_BASE = import.meta.env.VITE_API_URL;
 const headshotApiUrl = (userId: number) => `${API_BASE}/proxy/avatar/${userId}`;
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export const shortenServerId = (id: string) => {
   if (!id) return "-";
@@ -1447,6 +1448,9 @@ const NoDashboardAccess: React.FC<{ user: AuthUser }> = ({ user }) => {
     user.discord?.username && user.discord?.discriminator
       ? `${user.discord.username}#${user.discord.discriminator}`
       : user.discord?.username || "Discord not linked";
+  const discordLoginUrl = `${API_BASE_URL}/auth/discord/login`;
+  const canLinkDiscord = user.permissions.hasRoblox && !user.permissions.hasDiscord;
+
   return (
     <div className="dashboard">
       <style>{globalStyles}</style>
@@ -1479,6 +1483,22 @@ const NoDashboardAccess: React.FC<{ user: AuthUser }> = ({ user }) => {
               <p className="muted small" style={{ marginTop: 6 }}>
                 Roles: {user.discord?.roles?.length ? user.discord.roles.join(", ") : "None detected"}
               </p>
+            </div>
+            <div className="permission-status">
+              {user.permissions.hasDiscord ? (
+                <span className="pill">Linked</span>
+              ) : (
+                <button
+                  className="view-map"
+                  type="button"
+                  disabled={!canLinkDiscord}
+                  onClick={() => {
+                    window.location.href = discordLoginUrl;
+                  }}
+                >
+                  Link Discord
+                </button>
+              )}
             </div>
           </div>
         </div>
