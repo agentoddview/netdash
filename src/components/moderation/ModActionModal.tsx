@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { useModeration } from "../../useModeration";
+import { useAuth } from "../../AuthGate";
 import type { ModActionPlayer } from "./ModActionButton";
 
 type ModActionModalProps = {
@@ -9,16 +10,27 @@ type ModActionModalProps = {
   serverId: string;
 };
 
-type ActionKey = "kick" | "respawn" | "serverBan" | "globalBan" | "message";
+type ActionKey =
+  | "kick"
+  | "respawn"
+  | "serverBan"
+  | "globalBan"
+  | "message"
+  | "freeze"
+  | "bring"
+  | "teleportTo"
+  | "alert";
 
 export const ModActionModal: React.FC<ModActionModalProps> = ({ isOpen, onClose, player, serverId }) => {
-  const { kick, respawn, serverBan, globalBan, message } = useModeration();
+  const { kick, respawn, serverBan, globalBan, message, freeze, bring, teleportTo, alert } = useModeration();
+  const { user } = useAuth();
   const [reason, setReason] = useState("");
   const [msg, setMsg] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const playerLabel = useMemo(() => player.displayName || player.username, [player.displayName, player.username]);
+  const moderatorUserId = user?.robloxUserId;
 
   if (!isOpen) return null;
 
@@ -27,13 +39,19 @@ export const ModActionModal: React.FC<ModActionModalProps> = ({ isOpen, onClose,
     setSubmitting(true);
     try {
       if (action === "kick") {
-        await kick(player.userId, serverId, reason || undefined);
+        await kick(player.userId, serverId, reason || undefined, moderatorUserId);
       } else if (action === "respawn") {
-        await respawn(player.userId, serverId);
+        await respawn(player.userId, serverId, moderatorUserId);
       } else if (action === "serverBan") {
-        await serverBan(player.userId, serverId, reason || undefined);
+        await serverBan(player.userId, serverId, reason || undefined, moderatorUserId);
       } else if (action === "globalBan") {
-        await globalBan(player.userId, serverId, reason || undefined);
+        await globalBan(player.userId, serverId, reason || undefined, moderatorUserId);
+      } else if (action === "freeze") {
+        await freeze(player.userId, serverId, reason || undefined, moderatorUserId);
+      } else if (action === "bring") {
+        await bring(player.userId, serverId, reason || undefined, moderatorUserId);
+      } else if (action === "teleportTo") {
+        await teleportTo(player.userId, serverId, reason || undefined, moderatorUserId);
       } else if (action === "message") {
         const trimmed = msg.trim();
         if (!trimmed) {
@@ -41,9 +59,18 @@ export const ModActionModal: React.FC<ModActionModalProps> = ({ isOpen, onClose,
           setSubmitting(false);
           return;
         }
-        await message(player.userId, serverId, trimmed);
+        await message(player.userId, serverId, trimmed, moderatorUserId);
+        setMsg("");
+      } else if (action === "alert") {
+        const trimmed = msg.trim();
+        if (!trimmed) {
+          setError("Message cannot be empty.");
+          setSubmitting(false);
+          return;
+        }
+        await alert(player.userId, serverId, trimmed, moderatorUserId);
+        setMsg("");
       }
-      onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to submit action.");
     } finally {
@@ -99,6 +126,26 @@ export const ModActionModal: React.FC<ModActionModalProps> = ({ isOpen, onClose,
           </button>
           <button type="button" onClick={() => handleAction("globalBan")} disabled={submitting}>
             Global Ban
+          </button>
+        </div>
+
+        <div className="mod-actions">
+          <button type="button" onClick={() => handleAction("freeze")} disabled={submitting}>
+            Freeze
+          </button>
+          <button type="button" onClick={() => handleAction("bring")} disabled={submitting}>
+            Bring
+          </button>
+          <button type="button" onClick={() => handleAction("teleportTo")} disabled={submitting}>
+            Teleport To
+          </button>
+          <button
+            type="button"
+            onClick={() => handleAction("alert")}
+            disabled={submitting || !msg.trim()}
+            title="Send server-wide alert"
+          >
+            Alert
           </button>
         </div>
 
