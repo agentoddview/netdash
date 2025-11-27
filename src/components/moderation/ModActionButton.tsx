@@ -17,12 +17,7 @@ export const ModActionButton: React.FC<ModActionButtonProps> = ({ player, server
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
 
-  const canModerate =
-    !!user &&
-    (user.permissions.isSupervisor ||
-      user.permissions.isLeadSupervisor ||
-      user.permissions.isDeveloper ||
-      user.permissions.isAdmin);
+  const canModerate = !!user?.permissions?.canModerate;
 
   if (!canModerate) return null;
 

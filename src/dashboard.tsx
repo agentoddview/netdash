@@ -4,6 +4,7 @@ import { useTheme } from "./ThemeContext";
 import { NavLink, useNavigate } from "react-router-dom";
 import LiveMap from "./LiveMap";
 import { ModActionButton } from "./components/moderation/ModActionButton";
+import type { AuthUser } from "./AuthGate";
 
 type Summary = {
   onlineTotal: number;
@@ -130,6 +131,7 @@ export const getStaffHighlight = (rank?: string | null): { color?: string; icon?
 };
 
 const DashboardPage: React.FC = () => {
+  const { user, logout } = useAuth();
   const [summary, setSummary] = useState<SummaryResponse | null>(null);
   const [playersState, setPlayersState] = useState<PlayersResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -142,7 +144,6 @@ const DashboardPage: React.FC = () => {
   const [highlightedPlayerId, setHighlightedPlayerId] = useState<number | null>(null);
   const [isMapFullscreen, setIsMapFullscreen] = useState(false);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
-  const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const handleSelectPlayer = useCallback(
@@ -157,7 +158,26 @@ const DashboardPage: React.FC = () => {
   );
   const selectedRowRef = useRef<HTMLDivElement | null>(null);
 
+  if (!user) {
+    return (
+      <div className="dashboard">
+        <style>{globalStyles}</style>
+        <p className="muted" style={{ textAlign: "center" }}>
+          Loading...
+        </p>
+      </div>
+    );
+  }
+
+  if (!user.permissions.canSeeDashboard) {
+    return <NoDashboardAccess user={user} />;
+  }
+
   useEffect(() => {
+    if (!user?.permissions?.canSeeDashboard) {
+      setLoading(false);
+      return;
+    }
     let cancelled = false;
     const controller = new AbortController();
 
@@ -213,7 +233,7 @@ const DashboardPage: React.FC = () => {
       clearInterval(interval);
       controller.abort();
     };
-  }, []);
+  }, [logout, user?.permissions?.canSeeDashboard]);
 
   // Utility to fetch a single headshot URL using backend proxy
   const fetchHeadshotUrl = async (userId: number): Promise<string | null> => {
@@ -1421,5 +1441,50 @@ export const globalStyles = `
     }
   }
 `;
+
+const NoDashboardAccess: React.FC<{ user: AuthUser }> = ({ user }) => {
+  const discordTag =
+    user.discord?.username && user.discord?.discriminator
+      ? `${user.discord.username}#${user.discord.discriminator}`
+      : user.discord?.username || "Discord not linked";
+  return (
+    <div className="dashboard">
+      <style>{globalStyles}</style>
+      <header className="header">
+        <div>
+          <p className="eyebrow">Network Dashboard</p>
+          <h1>Access denied</h1>
+          <p className="muted small">
+            You need a Supervisor/Admin Discord role or the Dashboard Access role (1443481782380138516) and must link
+            both Roblox and Discord.
+          </p>
+        </div>
+      </header>
+      <section className="panel">
+        <div className="panel-header">
+          <h2>Your links</h2>
+          <p className="muted">Make sure both accounts are connected.</p>
+        </div>
+        <div className="permissions-grid">
+          <div className="permission-row">
+            <div>
+              <p className="muted small">Roblox</p>
+              <div className="pill">{user.permissions.hasRoblox ? user.username : "Not linked"}</div>
+            </div>
+          </div>
+          <div className="permission-row">
+            <div>
+              <p className="muted small">Discord</p>
+              <div className="pill">{user.permissions.hasDiscord ? discordTag : "Not linked"}</div>
+              <p className="muted small" style={{ marginTop: 6 }}>
+                Roles: {user.discord?.roles?.length ? user.discord.roles.join(", ") : "None detected"}
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+};
 
 export default DashboardPage;

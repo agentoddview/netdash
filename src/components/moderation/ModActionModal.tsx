@@ -31,8 +31,9 @@ export const ModActionModal: React.FC<ModActionModalProps> = ({ isOpen, onClose,
 
   const playerLabel = useMemo(() => player.displayName || player.username, [player.displayName, player.username]);
   const moderatorUserId = user?.robloxUserId;
+  const canModerate = !!user?.permissions?.canModerate;
 
-  if (!isOpen) return null;
+  if (!isOpen || !canModerate) return null;
 
   const handleAction = async (action: ActionKey) => {
     setError(null);
