@@ -1450,6 +1450,11 @@ const NoDashboardAccess: React.FC<{ user: AuthUser }> = ({ user }) => {
       : user.discord?.username || "Discord not linked";
   const discordLoginUrl = `${API_BASE_URL}/auth/discord/login`;
   const canLinkDiscord = user.permissions.hasRoblox && !user.permissions.hasDiscord;
+  const shouldShowPurchaseMessage =
+    !user.permissions.canModerate &&
+    !user.permissions.isAdmin &&
+    !user.permissions.isSupervisor &&
+    !user.permissions.hasDashboardRole;
 
   return (
     <div className="dashboard">
@@ -1462,6 +1467,26 @@ const NoDashboardAccess: React.FC<{ user: AuthUser }> = ({ user }) => {
             You need a Supervisor/Admin Discord role or the Dashboard Access role (1443481782380138516) and must link
             both Roblox and Discord.
           </p>
+          {shouldShowPurchaseMessage && (
+            <div className="alert" style={{ marginTop: 8 }}>
+              <p style={{ margin: 0 }}>
+                To purchase dashboard access, join our Discord at{" "}
+                <a href="https://discord.gg/netransit" target="_blank" rel="noreferrer" style={{ color: "#9cb3d8" }}>
+                  discord.gg/netransit
+                </a>{" "}
+                and buy the Live GPS Dashboard Access product in the{" "}
+                <a
+                  href="https://discord.com/channels/882441222487162912/shop/1443481780706480209"
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ color: "#9cb3d8" }}
+                >
+                  shop
+                </a>
+                .
+              </p>
+            </div>
+          )}
         </div>
       </header>
       <section className="panel">
