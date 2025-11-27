@@ -1569,7 +1569,13 @@ const NoDashboardAccess: React.FC<AccessProps> = ({ user, onUnlinkDiscord, onUnl
             <div className="permission-status" style={{ gap: 8, flexWrap: "wrap" }}>
               {user.permissions.hasDiscord ? (
                 <>
-                  <button className="view-map" onClick={() => (window.location.href = discordLoginUrl)}>
+                  <button
+                    className="view-map"
+                    onClick={() => {
+                      localStorage.removeItem("user");
+                      window.location.href = discordLoginUrl;
+                    }}
+                  >
                     Change
                   </button>
                   <button
@@ -1588,6 +1594,7 @@ const NoDashboardAccess: React.FC<AccessProps> = ({ user, onUnlinkDiscord, onUnl
                   type="button"
                   disabled={!canLinkDiscord}
                   onClick={() => {
+                    localStorage.removeItem("user");
                     window.location.href = discordLoginUrl;
                   }}
                 >

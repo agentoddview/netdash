@@ -67,6 +67,9 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   };
 
   useEffect(() => {
+    if (typeof window !== "undefined" && window.location.search.includes("discord_oauth_returned=1")) {
+      localStorage.removeItem("user");
+    }
     refresh();
   }, []);
 

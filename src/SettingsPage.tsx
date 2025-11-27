@@ -133,7 +133,13 @@ const SettingsPage: React.FC = () => {
             <div className="permission-status" style={{ gap: 8, flexWrap: "wrap" }}>
               {user.discordUserId ? (
                 <>
-                  <button className="view-map" onClick={() => (window.location.href = discordLoginUrl)}>
+                  <button
+                    className="view-map"
+                    onClick={() => {
+                      localStorage.removeItem("user");
+                      window.location.href = discordLoginUrl;
+                    }}
+                  >
                     Change
                   </button>
                   <button
@@ -146,7 +152,13 @@ const SettingsPage: React.FC = () => {
                   </button>
                 </>
               ) : (
-                <button className="join-button" onClick={() => (window.location.href = discordLoginUrl)}>
+                <button
+                  className="join-button"
+                  onClick={() => {
+                    localStorage.removeItem("user");
+                    window.location.href = discordLoginUrl;
+                  }}
+                >
                   Link Discord
                 </button>
               )}
