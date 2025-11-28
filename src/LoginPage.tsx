@@ -1,7 +1,25 @@
 import React from "react";
+import DiscordIcon from "./icons/DiscordIcon";
 
 const LoginPage: React.FC<{ apiBase: string }> = ({ apiBase }) => {
-  const loginUrl = `${apiBase}/auth/roblox/login`;
+  const robloxLogin = `${apiBase}/auth/roblox`;
+  const discordLogin = `${apiBase}/auth/discord`;
+
+  const baseButton: React.CSSProperties = {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "8px",
+    padding: "12px 18px",
+    borderRadius: "10px",
+    fontWeight: 700,
+    textDecoration: "none",
+    border: "1px solid transparent",
+    flex: 1,
+    minWidth: "140px",
+    cursor: "pointer",
+  };
+
   return (
     <div
       style={{
@@ -26,26 +44,44 @@ const LoginPage: React.FC<{ apiBase: string }> = ({ apiBase }) => {
       >
         <h1 style={{ marginTop: 0, marginBottom: "12px" }}>NET Control Center</h1>
         <p style={{ marginTop: 0, marginBottom: "18px", color: "#7d8cab" }}>
-          Please login with Roblox to continue.
+          Please login with Roblox and Discord to continue.
         </p>
-        <a
-          href={loginUrl}
+        <div
           style={{
-            display: "inline-flex",
-            alignItems: "center",
+            display: "flex",
+            gap: "10px",
+            flexWrap: "wrap",
             justifyContent: "center",
-            gap: "8px",
-            padding: "12px 18px",
-            borderRadius: "10px",
-            background: "#00b06b",
-            color: "#0b0f1e",
-            fontWeight: 700,
-            textDecoration: "none",
-            border: "1px solid #0a8b54",
           }}
         >
-          Login with Roblox
-        </a>
+          <button
+            onClick={() => {
+              window.location.href = robloxLogin;
+            }}
+            style={{
+              ...baseButton,
+              background: "#00b06b",
+              color: "#0b0f1e",
+              borderColor: "#0a8b54",
+            }}
+          >
+            Login with Roblox
+          </button>
+          <button
+            onClick={() => {
+              window.location.href = discordLogin;
+            }}
+            style={{
+              ...baseButton,
+              background: "#5865F2",
+              color: "#fff",
+              borderColor: "#4a53d9",
+            }}
+          >
+            <DiscordIcon size={18} />
+            Login with Discord
+          </button>
+        </div>
       </div>
       <div
         style={{
