@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import LoginPage from "./LoginPage";
+import { AccessDeniedPage } from "./dashboard";
 
 type Permissions = {
   hasRoblox: boolean;
@@ -103,6 +104,16 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     }
   };
 
+  const contextValue: AuthContextValue = {
+    user,
+    authenticated,
+    loading,
+    logout,
+    refresh,
+    unlinkDiscord: () => postAndRefresh("/auth/unlink/discord"),
+    unlinkRoblox: () => postAndRefresh("/auth/unlink/roblox"),
+  };
+
   if (loading) {
     return (
       <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", color: "#fff" }}>
@@ -111,25 +122,29 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     );
   }
 
-  if (!authenticated) {
+  if (!authenticated || !user) {
     return <LoginPage apiBase={API_BASE} />;
   }
 
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        authenticated,
-        loading: false,
-        logout,
-        refresh,
-        unlinkDiscord: () => postAndRefresh("/auth/unlink/discord"),
-        unlinkRoblox: () => postAndRefresh("/auth/unlink/roblox"),
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
+  const perms = user.permissions ?? ({} as Partial<Permissions>);
+  const hasRoblox = !!perms.hasRoblox;
+  const hasDiscord = !!perms.hasDiscord;
+  const hasBothAccounts = hasRoblox && hasDiscord;
+  const canSeeDashboard = !!perms.canSeeDashboard;
+
+  if (!hasBothAccounts || !canSeeDashboard) {
+    return (
+      <AuthContext.Provider value={contextValue}>
+        <AccessDeniedPage
+          user={user}
+          onUnlinkDiscord={contextValue.unlinkDiscord}
+          onUnlinkRoblox={contextValue.unlinkRoblox}
+        />
+      </AuthContext.Provider>
+    );
+  }
+
+  return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => {

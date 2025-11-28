@@ -166,7 +166,9 @@ const DashboardPage: React.FC = () => {
   }
 
   if (!user.permissions.canSeeDashboard) {
-    return <NoDashboardAccess user={user} onUnlinkDiscord={unlinkDiscord} onUnlinkRoblox={unlinkRoblox} />;
+    return (
+      <AccessDeniedPage user={user} onUnlinkDiscord={unlinkDiscord} onUnlinkRoblox={unlinkRoblox} />
+    );
   }
 
   useEffect(() => {
@@ -1383,7 +1385,11 @@ type AccessProps = {
   onUnlinkRoblox: () => Promise<void>;
 };
 
-const NoDashboardAccess: React.FC<AccessProps> = ({ user, onUnlinkDiscord, onUnlinkRoblox }) => {
+export const AccessDeniedPage: React.FC<AccessProps> = ({
+  user,
+  onUnlinkDiscord,
+  onUnlinkRoblox,
+}) => {
   const [unlinkingDiscord, setUnlinkingDiscord] = useState(false);
   const [unlinkingRoblox, setUnlinkingRoblox] = useState(false);
   const [error, setError] = useState<string | null>(null);
