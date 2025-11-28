@@ -2,34 +2,36 @@ import { useCallback, useEffect, useState } from "react";
 
 const API_BASE = import.meta.env.VITE_API_URL;
 
-export type AdminUserSummary = {
-  userId: number;
+export interface AdminUser {
+  id: number;
   createdAt: string;
   updatedAt: string;
-  roblox: {
-    robloxUserId: number;
+  lastLoginIp?: string | null;
+  lastLoginAt?: string | null;
+  roblox?: {
     username: string;
     displayName: string;
+    userId: number;
     avatarUrl?: string | null;
   } | null;
-  discord: {
-    discordUserId: string;
-    username?: string | null;
+  discord?: {
+    username: string;
     globalName?: string | null;
-    serverDisplayName?: string | null;
+    id: string;
     avatarUrl?: string | null;
+    serverDisplayName?: string | null;
   } | null;
-};
+}
 
 type UseAdminUsersResult = {
-  data: AdminUserSummary[] | null;
+  data: AdminUser[] | null;
   loading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
 };
 
 export function useAdminUsers(): UseAdminUsersResult {
-  const [data, setData] = useState<AdminUserSummary[] | null>(null);
+  const [data, setData] = useState<AdminUser[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,8 +43,14 @@ export function useAdminUsers(): UseAdminUsersResult {
       if (!res.ok) {
         throw new Error("Failed to load admin users");
       }
-      const json = (await res.json()) as AdminUserSummary[];
-      setData(json);
+      const json = (await res.json()) as AdminUser[];
+      setData(
+        json.map((u) => ({
+          ...u,
+          lastLoginIp: u.lastLoginIp ?? null,
+          lastLoginAt: u.lastLoginAt ?? null,
+        }))
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load admin users");
       setData(null);
