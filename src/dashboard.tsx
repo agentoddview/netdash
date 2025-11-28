@@ -1,9 +1,8 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { useAuth, type AuthUser } from "./AuthGate";
-import { useTheme } from "./ThemeContext";
-import { NavLink, useNavigate } from "react-router-dom";
 import LiveMap from "./LiveMap";
 import { ModActionButton } from "./components/moderation/ModActionButton";
+import AppShell from "./components/AppShell";
 
 type Summary = {
   onlineTotal: number;
@@ -143,9 +142,6 @@ const DashboardPage: React.FC = () => {
   const contentGridRef = useRef<HTMLDivElement | null>(null);
   const [highlightedPlayerId, setHighlightedPlayerId] = useState<number | null>(null);
   const [isMapFullscreen, setIsMapFullscreen] = useState(false);
-  const [isAccountOpen, setIsAccountOpen] = useState(false);
-  const { theme, toggleTheme } = useTheme();
-  const navigate = useNavigate();
   const handleSelectPlayer = useCallback(
     (valueOrUpdater: number | null | ((prev: number | null) => number | null)) => {
       setHighlightedPlayerId((prev) =>
@@ -339,83 +335,11 @@ const DashboardPage: React.FC = () => {
     selectedRowRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [highlightedPlayerId]);
 
-  const avatarSrc = user?.avatarUrl;
-  const avatarFallback = user?.username?.charAt(0)?.toUpperCase() ?? "?";
   return (
-    <div className="dashboard">
-      <style>{globalStyles}</style>
-      <header className="header">
-        <div>
-          <p className="eyebrow">Network Dashboard</p>
-          <h1>Operations Pulse</h1>
-          <div className="top-nav">
-            <NavLink to="/" className={({ isActive }) => `nav-link ${isActive ? "nav-link--active" : ""}`}>
-              Main
-            </NavLink>
-            <NavLink to="/servers" className={({ isActive }) => `nav-link ${isActive ? "nav-link--active" : ""}`}>
-              Servers
-            </NavLink>
-          </div>
-        </div>
-        <div className="header-right">
-          <div className="status-chip">
-            <span className="dot" />
-            {loading ? "Syncing" : "Live"}
-          </div>
-          <div className="account-menu">
-            <button
-              className="account-trigger"
-              onClick={() => setIsAccountOpen((v) => !v)}
-              aria-haspopup="true"
-              aria-expanded={isAccountOpen}
-            >
-              {avatarSrc ? (
-                <img src={avatarSrc} alt={`${user?.username} avatar`} className="account-avatar" />
-              ) : (
-                <div className="avatar-fallback">{avatarFallback}</div>
-              )}
-              <span className="account-name">{user?.username}</span>
-            </button>
-            {isAccountOpen && (
-              <div className="account-dropdown">
-                <button className="account-item" onClick={toggleTheme}>
-                  {theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-                </button>
-                {(user?.permissions.administration ?? 0) >= 6 && (
-                  <button
-                    className="account-item"
-                    onClick={() => {
-                      setIsAccountOpen(false);
-                      navigate("/admin/users");
-                    }}
-                  >
-                    Account Admin
-                  </button>
-                )}
-                <button
-                  className="account-item"
-                  onClick={() => {
-                    setIsAccountOpen(false);
-                    navigate("/settings");
-                  }}
-                >
-                  Settings
-                </button>
-                <button
-                  className="account-item"
-                  onClick={() => {
-                    setIsAccountOpen(false);
-                    logout();
-                  }}
-                >
-                  Log out
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </header>
-
+    <AppShell
+      headerProps={{ activeTab: "main", showLiveDot: true, liveLabel: loading ? "Syncing" : "Live", title: "Operations Pulse" }}
+      styles={globalStyles}
+    >
       {error && <div className="alert">Error: {error}</div>}
 
       <section className="stats">
@@ -589,7 +513,7 @@ const DashboardPage: React.FC = () => {
           />
         </section>
       </div>
-    </div>
+    </AppShell>
   );
 };
 

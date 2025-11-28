@@ -1,18 +1,17 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { NavLink, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { globalStyles, shortenServerId, getJoinUrl, type GameState, type Server, type Player } from "./dashboard";
 import { useAuth } from "./AuthGate";
-import { useTheme } from "./ThemeContext";
 import PlayerRow from "./PlayerRow";
 import LiveMap from "./LiveMap";
 import { useAvatarMap } from "./useAvatarMap";
+import AppShell from "./components/AppShell";
 
 const API_BASE = import.meta.env.VITE_API_URL;
 const ServerDetailPage: React.FC = () => {
   const { serverId: routeServerId } = useParams<{ serverId: string }>();
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const { logout } = useAuth();
   const [playersState, setPlayersState] = useState<GameState | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -22,7 +21,6 @@ const ServerDetailPage: React.FC = () => {
   const contentGridRef = useRef<HTMLDivElement | null>(null);
   const [highlightedPlayerId, setHighlightedPlayerId] = useState<number | null>(null);
   const [isMapFullscreen, setIsMapFullscreen] = useState(false);
-  const [isAccountOpen, setIsAccountOpen] = useState(false);
   const selectedRowRef = useRef<HTMLDivElement | null>(null);
 
   const handleSelectPlayer = useCallback(
@@ -151,90 +149,35 @@ const ServerDetailPage: React.FC = () => {
 
   if (!currentServer) {
     return (
-      <div className="dashboard">
-        <style>{globalStyles}</style>
-        <header className="header">
-          <div>
-            <p className="eyebrow">Network Dashboard</p>
-            <h1>Server not found</h1>
-          </div>
-        </header>
+      <AppShell
+        headerProps={{
+          activeTab: "servers",
+          showLiveDot: true,
+          liveLabel: loading ? "Syncing" : "Live",
+          title: "Server not found",
+        }}
+        styles={globalStyles}
+      >
         <div style={{ textAlign: "center" }}>
           <p className="muted">This server is offline or could not be found.</p>
           <button className="view-map" onClick={() => navigate("/servers")}>
             Back to Servers
           </button>
         </div>
-      </div>
+      </AppShell>
     );
   }
 
   return (
-    <div className="dashboard">
-      <style>{globalStyles}</style>
-      <header className="header">
-        <div>
-          <p className="eyebrow">Network Dashboard</p>
-          <h1>Operations Pulse</h1>
-          <div className="top-nav">
-            <NavLink to="/" className={({ isActive }) => `nav-link ${isActive ? "nav-link--active" : ""}`}>
-              Main
-            </NavLink>
-            <NavLink
-              to="/servers"
-              className={({ isActive }) => `nav-link ${isActive ? "nav-link--active" : ""}`}
-            >
-              Servers
-            </NavLink>
-          </div>
-        </div>
-        <div className="header-right">
-          <div className="status-chip">
-            <span className="dot" />
-            {loading ? "Syncing" : "Live"}
-          </div>
-          <div className="account-menu">
-            <button
-              className="account-trigger"
-              onClick={() => setIsAccountOpen((v) => !v)}
-              aria-haspopup="true"
-              aria-expanded={isAccountOpen}
-            >
-              {user?.avatarUrl ? (
-                <img src={user.avatarUrl} alt={`${user.username} avatar`} className="account-avatar" />
-              ) : (
-                <div className="avatar-fallback">{user?.username?.charAt(0)?.toUpperCase() ?? "?"}</div>
-              )}
-              <span className="account-name">{user?.username}</span>
-            </button>
-            {isAccountOpen && (
-              <div className="account-dropdown">
-                <button className="account-item" onClick={toggleTheme}>
-                  {theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-                </button>
-                <button
-                  className="account-item"
-                  onClick={() => {
-                    setIsAccountOpen(false);
-                    navigate("/settings");
-                  }}
-                >
-                  Settings
-                </button>
-                <button
-                  className="account-item"
-                  onClick={() => {
-                    setIsAccountOpen(false);
-                    logout();
-                  }}
-                >
-                  Log out
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </header>
+    <AppShell
+      headerProps={{
+        activeTab: "servers",
+        showLiveDot: true,
+        liveLabel: loading ? "Syncing" : "Live",
+        title: "Operations Pulse",
+      }}
+      styles={globalStyles}
+    >
 
       <div
         className="content-grid"
@@ -314,7 +257,7 @@ const ServerDetailPage: React.FC = () => {
           />
         </section>
       </div>
-    </div>
+    </AppShell>
   );
 };
 

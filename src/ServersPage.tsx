@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 import { globalStyles, shortenServerId, getJoinUrl } from "./dashboard";
 import type { Server, Player, GameState } from "./dashboard";
+import AppShell from "./components/AppShell";
 
 type RoleRowProps = {
   label: string;
@@ -69,23 +70,10 @@ const ServersPage: React.FC = () => {
   };
 
   return (
-    <div className="dashboard">
-      <style>{globalStyles}</style>
-      <header className="header">
-        <div>
-          <p className="eyebrow">Network Dashboard</p>
-          <h1>Our Servers</h1>
-          <div className="top-nav">
-            <NavLink to="/" className={({ isActive }) => `nav-link ${isActive ? "nav-link--active" : ""}`}>
-              Main
-            </NavLink>
-            <NavLink to="/servers" className={({ isActive }) => `nav-link ${isActive ? "nav-link--active" : ""}`}>
-              Servers
-            </NavLink>
-          </div>
-        </div>
-      </header>
-
+    <AppShell
+      headerProps={{ activeTab: "servers", showLiveDot: true, liveLabel: loading ? "Syncing" : "Live", title: "Our Servers" }}
+      styles={globalStyles}
+    >
       <div className="servers-search">
         <input
           type="text"
@@ -159,7 +147,7 @@ const ServersPage: React.FC = () => {
           })}
         </div>
       )}
-    </div>
+    </AppShell>
   );
 };
 
