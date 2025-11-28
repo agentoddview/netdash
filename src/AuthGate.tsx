@@ -122,16 +122,24 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     );
   }
 
-  if (!authenticated || !user) {
+  // If we truly have no user data, treat as logged out → login screen
+  if (!user) {
     return <LoginPage apiBase={API_BASE} />;
   }
 
   const perms = user.permissions ?? ({} as Partial<Permissions>);
   const hasRoblox = !!perms.hasRoblox;
   const hasDiscord = !!perms.hasDiscord;
+  const hasAnyAccount = hasRoblox || hasDiscord;
   const hasBothAccounts = hasRoblox && hasDiscord;
   const canSeeDashboard = !!perms.canSeeDashboard;
 
+  // 1) No accounts at all → show the initial login screen
+  if (!hasAnyAccount) {
+    return <LoginPage apiBase={API_BASE} />;
+  }
+
+  // 2) Has at least one account, but either missing the other OR missing perms
   if (!hasBothAccounts || !canSeeDashboard) {
     return (
       <AuthContext.Provider value={contextValue}>
