@@ -13,6 +13,99 @@ function formatDate(value?: string | null): string {
   return date.toLocaleString();
 }
 
+const adminStyles = `
+  .admin-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .admin-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .admin-identity {
+    min-width: 160px;
+    max-width: 240px;
+  }
+  .admin-identity .pill {
+    display: inline-block;
+  }
+  .admin-muted-line {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--muted);
+    font-size: 12px;
+    margin-top: 6px;
+  }
+  .admin-account {
+    flex: 1 1 220px;
+    min-width: 200px;
+  }
+  .admin-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 180px;
+  }
+  .admin-actions {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 8px;
+  }
+  .admin-action-btn {
+    padding: 8px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    background: rgba(255,255,255,0.05);
+    color: var(--text);
+    transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;
+  }
+  .admin-action-btn:hover {
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(255,255,255,0.15);
+    transform: translateY(-1px);
+  }
+  .admin-action-neutral {
+    background: rgba(148,163,184,0.12);
+    border-color: rgba(148,163,184,0.3);
+  }
+  .admin-action-neutral:hover {
+    background: rgba(148,163,184,0.2);
+  }
+  .admin-action-warn {
+    background: rgba(245,158,11,0.18);
+    border-color: rgba(245,158,11,0.35);
+  }
+  .admin-action-warn:hover {
+    background: rgba(245,158,11,0.28);
+  }
+  .admin-action-danger {
+    background: rgba(239,68,68,0.22);
+    border-color: rgba(239,68,68,0.4);
+  }
+  .admin-action-danger:hover {
+    background: rgba(239,68,68,0.32);
+  }
+  @media (max-width: 720px) {
+    .admin-identity {
+      width: 100%;
+      max-width: none;
+    }
+    .admin-actions {
+      justify-content: flex-start;
+    }
+  }
+`;
+
 const AdminUsersPage: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -80,12 +173,13 @@ const AdminUsersPage: React.FC = () => {
   return (
     <div className="dashboard">
       <style>{globalStyles}</style>
+      <style>{adminStyles}</style>
       <header className="header">
         <div>
           <p className="eyebrow">Administration</p>
           <h1>Account Admin</h1>
         </div>
-        <div className="header-right">
+        <div className="header-right admin-header-actions">
           <button className="view-map" onClick={() => navigate("/")}>
             Back to dashboard
           </button>
@@ -111,18 +205,19 @@ const AdminUsersPage: React.FC = () => {
                 discord?.serverDisplayName || discord?.globalName || discord?.username || "Not linked";
               const discordHandle = discord?.username ? `@${discord.username}` : "Not linked";
               return (
-                <div key={u.id} className="permission-row" style={{ alignItems: "center", gap: 12 }}>
-                  <div style={{ minWidth: 60 }}>
+                <div key={u.id} className="permission-row admin-row">
+                  <div className="admin-identity">
                     <p className="muted small" style={{ margin: 0 }}>
                       User ID
                     </p>
-                    <div className="pill">{u.id}</div>
-                    <p className="text-xs text-slate-400 mt-1">
+                    <div className="pill admin-pill">{u.id}</div>
+                    <p className="admin-muted-line">
                       Last IP: {u.lastLoginIp ?? "Unknown"} · Last login:{" "}
                       {u.lastLoginAt ? formatDate(u.lastLoginAt) : "Unknown"}
                     </p>
                   </div>
-                  <div style={{ flex: 1 }}>
+
+                  <div className="admin-account">
                     <p className="muted small" style={{ margin: 0 }}>
                       Roblox
                     </p>
@@ -147,10 +242,13 @@ const AdminUsersPage: React.FC = () => {
                         </div>
                       </div>
                     ) : (
-                      <p className="muted small">Not linked</p>
+                      <p className="muted small" style={{ marginTop: 4 }}>
+                        Not linked
+                      </p>
                     )}
                   </div>
-                  <div style={{ flex: 1 }}>
+
+                  <div className="admin-account">
                     <p className="muted small" style={{ margin: 0 }}>
                       Discord
                     </p>
@@ -175,25 +273,31 @@ const AdminUsersPage: React.FC = () => {
                         </div>
                       </div>
                     ) : (
-                      <p className="muted small">Not linked</p>
+                      <p className="muted small" style={{ marginTop: 4 }}>
+                        Not linked
+                      </p>
                     )}
                   </div>
-                  <div>
-                    <p className="muted small" style={{ margin: 0 }}>
-                      Created
-                    </p>
-                    <div className="pill">{formatDate(u.createdAt)}</div>
+
+                  <div className="admin-meta">
+                    <div>
+                      <p className="muted small" style={{ margin: 0 }}>
+                        Created
+                      </p>
+                      <div className="pill">{formatDate(u.createdAt)}</div>
+                    </div>
+                    <div>
+                      <p className="muted small" style={{ margin: 0 }}>
+                        Updated
+                      </p>
+                      <div className="pill">{formatDate(u.updatedAt)}</div>
+                    </div>
                   </div>
-                  <div>
-                    <p className="muted small" style={{ margin: 0 }}>
-                      Updated
-                    </p>
-                    <div className="pill">{formatDate(u.updatedAt)}</div>
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-2 justify-end" style={{ flexBasis: "100%" }}>
+
+                  <div className="admin-actions">
                     {roblox && (
                       <button
-                        className="px-3 py-1 rounded-md text-xs bg-slate-700 hover:bg-slate-600"
+                        className="admin-action-btn admin-action-neutral"
                         onClick={() => handleUnlinkRoblox(u.id)}
                       >
                         Unlink Roblox
@@ -202,7 +306,7 @@ const AdminUsersPage: React.FC = () => {
 
                     {discord && (
                       <button
-                        className="px-3 py-1 rounded-md text-xs bg-slate-700 hover:bg-slate-600"
+                        className="admin-action-btn admin-action-neutral"
                         onClick={() => handleUnlinkDiscord(u.id)}
                       >
                         Unlink Discord
@@ -210,21 +314,18 @@ const AdminUsersPage: React.FC = () => {
                     )}
 
                     <button
-                      className="px-3 py-1 rounded-md text-xs bg-sky-700 hover:bg-sky-600"
+                      className="admin-action-btn admin-action-neutral"
                       onClick={() => handleForceLogout(u.id)}
                     >
                       Force logout
                     </button>
 
-                    <button
-                      className="px-3 py-1 rounded-md text-xs bg-amber-600 hover:bg-amber-500"
-                      onClick={() => handleIpBan(u.id)}
-                    >
+                    <button className="admin-action-btn admin-action-warn" onClick={() => handleIpBan(u.id)}>
                       IP ban
                     </button>
 
                     <button
-                      className="px-3 py-1 rounded-md text-xs bg-red-600 hover:bg-red-500"
+                      className="admin-action-btn admin-action-danger"
                       onClick={() => handleDeleteUser(u.id)}
                     >
                       Delete account
