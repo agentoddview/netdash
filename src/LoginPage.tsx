@@ -2,8 +2,8 @@ import React from "react";
 import DiscordIcon from "./icons/DiscordIcon";
 
 const LoginPage: React.FC<{ apiBase: string }> = ({ apiBase }) => {
-  const robloxLogin = `${apiBase}/auth/roblox`;
-  const discordLogin = `${apiBase}/auth/discord`;
+  const robloxLoginUrl = `${apiBase}/auth/roblox/login`;
+  const discordLoginUrl = `${apiBase}/auth/discord/login`;
 
   const baseButton: React.CSSProperties = {
     display: "inline-flex",
@@ -55,8 +55,9 @@ const LoginPage: React.FC<{ apiBase: string }> = ({ apiBase }) => {
           }}
         >
           <button
+            type="button"
             onClick={() => {
-              window.location.href = robloxLogin;
+              window.location.href = robloxLoginUrl;
             }}
             style={{
               ...baseButton,
@@ -68,8 +69,9 @@ const LoginPage: React.FC<{ apiBase: string }> = ({ apiBase }) => {
             Login with Roblox
           </button>
           <button
+            type="button"
             onClick={() => {
-              window.location.href = discordLogin;
+              window.location.href = discordLoginUrl;
             }}
             style={{
               ...baseButton,
