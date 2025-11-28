@@ -1277,6 +1277,25 @@ export const globalStyles = `
     cursor: pointer;
   }
 
+  .admin-user-meta {
+    margin-top: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .admin-user-meta-row {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+
+  .admin-user-meta-row .muted.small {
+    opacity: 0.9;
+  }
+
   .servers-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));

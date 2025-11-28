@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "./AuthGate";
 import { globalStyles } from "./dashboard";
@@ -111,6 +111,7 @@ const AdminUsersPage: React.FC = () => {
   const navigate = useNavigate();
   const isAdmin = (user?.permissions.administration ?? 0) >= 6;
   const { data, loading, error, refetch } = useAdminUsers();
+  const [search, setSearch] = useState("");
 
   const handleUnlinkRoblox = async (userId: number) => {
     if (!window.confirm("Unlink this user's Roblox account?")) return;
@@ -159,6 +160,30 @@ const AdminUsersPage: React.FC = () => {
     await refetch();
   };
 
+  const filteredUsers = useMemo(() => {
+    if (!data) return [];
+    const term = search.trim().toLowerCase();
+    if (!term) return data;
+
+    return data.filter((u) => {
+      const roblox = u.roblox;
+      const discord = u.discord;
+
+      const fields: (string | number | null | undefined)[] = [
+        u.id,
+        u.lastLoginIp,
+        roblox?.username,
+        roblox?.displayName,
+        roblox?.userId,
+        discord?.username,
+        discord?.globalName,
+        discord?.serverDisplayName,
+      ];
+
+      return fields.some((f) => f != null && f.toString().toLowerCase().includes(term));
+    });
+  }, [data, search]);
+
   if (!user || !isAdmin) {
     return (
       <div className="dashboard">
@@ -179,7 +204,7 @@ const AdminUsersPage: React.FC = () => {
           <p className="eyebrow">Administration</p>
           <h1>Account Admin</h1>
         </div>
-        <div className="header-right admin-header-actions">
+        <div className="header-right">
           <button className="view-map" onClick={() => navigate("/")}>
             Back to dashboard
           </button>
@@ -194,11 +219,20 @@ const AdminUsersPage: React.FC = () => {
           <h2>Linked Accounts</h2>
           <p className="muted">Roblox and Discord links for all users.</p>
         </div>
+        <div className="servers-search" style={{ maxWidth: 360, marginTop: 16, marginBottom: 16 }}>
+          <input
+            type="text"
+            placeholder="Search by user, Roblox, Discord, or IP"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          <button aria-label="Search">🔍</button>
+        </div>
         {loading && <p className="muted">Loading users...</p>}
         {error && <p className="mod-error">{error}</p>}
-        {!loading && !error && data && (
+        {!loading && !error && filteredUsers && (
           <div className="permissions-grid">
-            {data.map((u) => {
+            {filteredUsers.map((u) => {
               const roblox = u.roblox;
               const discord = u.discord;
               const discordDisplay =
@@ -211,10 +245,18 @@ const AdminUsersPage: React.FC = () => {
                       User ID
                     </p>
                     <div className="pill admin-pill">{u.id}</div>
-                    <p className="admin-muted-line">
-                      Last IP: {u.lastLoginIp ?? "Unknown"} · Last login:{" "}
-                      {u.lastLoginAt ? formatDate(u.lastLoginAt) : "Unknown"}
-                    </p>
+                    <div className="admin-user-meta">
+                      <div className="admin-user-meta-row">
+                        <span className="muted small">Last IP:</span>
+                        <span className="muted small">{u.lastLoginIp ?? "Unknown"}</span>
+                      </div>
+                      <div className="admin-user-meta-row">
+                        <span className="muted small">Last login:</span>
+                        <span className="muted small">
+                          {u.lastLoginAt ? formatDate(u.lastLoginAt) : "Unknown"}
+                        </span>
+                      </div>
+                    </div>
                   </div>
 
                   <div className="admin-account">
