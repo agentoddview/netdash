@@ -381,6 +381,17 @@ const DashboardPage: React.FC = () => {
                 <button className="account-item" onClick={toggleTheme}>
                   {theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
                 </button>
+                {(user?.permissions.administration ?? 0) >= 6 && (
+                  <button
+                    className="account-item"
+                    onClick={() => {
+                      setIsAccountOpen(false);
+                      navigate("/admin/users");
+                    }}
+                  >
+                    Account Admin
+                  </button>
+                )}
                 <button
                   className="account-item"
                   onClick={() => {

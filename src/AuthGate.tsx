@@ -10,6 +10,7 @@ type Permissions = {
   hasDashboardRole: boolean;
   canSeeDashboard: boolean;
   canModerate: boolean;
+  administration?: number;
 };
 
 type DiscordProfile = {
