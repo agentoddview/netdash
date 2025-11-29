@@ -5,6 +5,7 @@ import { ModActionButton } from "./components/moderation/ModActionButton";
 import AppShell from "./components/AppShell";
 import { nameColorForPlayer } from "./utils/nameColor";
 import { Avatar } from "./components/Avatar";
+import ServerModerationModal from "./components/ServerModerationModal";
 
 type Summary = {
   onlineTotal: number;
@@ -144,6 +145,8 @@ const DashboardPage: React.FC = () => {
   const [dragging, setDragging] = useState(false);
   const contentGridRef = useRef<HTMLDivElement | null>(null);
   const [highlightedPlayerId, setHighlightedPlayerId] = useState<number | null>(null);
+  const [modServerId, setModServerId] = useState<string | null>(null);
+  const [modServerName, setModServerName] = useState<string>("");
   const [isMapFullscreen, setIsMapFullscreen] = useState(false);
   const handleSelectPlayer = useCallback(
     (valueOrUpdater: number | null | ((prev: number | null) => number | null)) => {
@@ -309,6 +312,7 @@ const DashboardPage: React.FC = () => {
 
   const profileUrl = (userId: number) => `https://www.roblox.com/users/${userId}/profile`;
   const avatarUrl = (userId: number) => avatarMap[userId] || headshotApiUrl(userId);
+  const canModerateServers = !!user?.permissions?.canModerate;
   const handleSelectServer = useCallback((id: string) => setSelectedServerId(id), []);
   const handleStartDrag = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -419,6 +423,17 @@ const DashboardPage: React.FC = () => {
                         <button className="view-map" onClick={() => handleSelectServer(server.serverId)}>
                           View Map
                         </button>
+                        {canModerateServers && (
+                          <button
+                            className="view-map"
+                            onClick={() => {
+                              setModServerId(server.serverId);
+                              setModServerName(shortenServerId(server.serverId));
+                            }}
+                          >
+                            Tools
+                          </button>
+                        )}
                         {joinUrl ? (
                           <a className="join-button" href={joinUrl}>
                             Join
@@ -518,6 +533,12 @@ const DashboardPage: React.FC = () => {
           />
         </section>
       </div>
+      <ServerModerationModal
+        isOpen={modServerId !== null}
+        onClose={() => setModServerId(null)}
+        serverId={modServerId ?? ""}
+        serverName={modServerName}
+      />
     </AppShell>
   );
 };

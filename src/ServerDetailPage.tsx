@@ -6,12 +6,13 @@ import PlayerRow from "./PlayerRow";
 import LiveMap from "./LiveMap";
 import { useAvatarMap } from "./useAvatarMap";
 import AppShell from "./components/AppShell";
+import ServerModerationModal from "./components/ServerModerationModal";
 
 const API_BASE = import.meta.env.VITE_API_URL;
 const ServerDetailPage: React.FC = () => {
   const { serverId: routeServerId } = useParams<{ serverId: string }>();
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const [playersState, setPlayersState] = useState<GameState | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -22,6 +23,9 @@ const ServerDetailPage: React.FC = () => {
   const [highlightedPlayerId, setHighlightedPlayerId] = useState<number | null>(null);
   const [isMapFullscreen, setIsMapFullscreen] = useState(false);
   const selectedRowRef = useRef<HTMLDivElement | null>(null);
+  const canModerateServers = !!user?.permissions?.canModerate;
+  const [modServerId, setModServerId] = useState<string | null>(null);
+  const [modServerName, setModServerName] = useState<string>("");
 
   const handleSelectPlayer = useCallback(
     (valueOrUpdater: number | null | ((prev: number | null) => number | null)) => {
@@ -199,6 +203,17 @@ const ServerDetailPage: React.FC = () => {
               <button className="view-map" onClick={() => navigate("/servers")}>
                 Back
               </button>
+              {canModerateServers && (
+                <button
+                  className="view-map"
+                  onClick={() => {
+                    setModServerId(currentServer.serverId);
+                    setModServerName(shortenServerId(currentServer.serverId));
+                  }}
+                >
+                  Tools
+                </button>
+              )}
               {getJoinUrl(currentServer) ? (
                 <a className="join-button" href={getJoinUrl(currentServer) ?? "#"}>
                   Join
@@ -257,6 +272,12 @@ const ServerDetailPage: React.FC = () => {
           />
         </section>
       </div>
+      <ServerModerationModal
+        isOpen={modServerId !== null}
+        onClose={() => setModServerId(null)}
+        serverId={modServerId ?? ""}
+        serverName={modServerName}
+      />
     </AppShell>
   );
 };

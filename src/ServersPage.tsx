@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { globalStyles, shortenServerId, getJoinUrl } from "./dashboard";
 import type { Server, Player, GameState } from "./dashboard";
 import AppShell from "./components/AppShell";
+import ServerModerationModal from "./components/ServerModerationModal";
+import { useAuth } from "./AuthGate";
 
 type RoleRowProps = {
   label: string;
@@ -29,6 +31,10 @@ const ServersPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const canModerateServers = !!user?.permissions?.canModerate;
+  const [modServerId, setModServerId] = useState<string | null>(null);
+  const [modServerName, setModServerName] = useState<string>("");
 
   useEffect(() => {
     const load = async () => {
@@ -112,17 +118,29 @@ const ServersPage: React.FC = () => {
                   }
                 }}
               >
-                <div className="server-card-grid-header">
-                  <div>
-                    <p className="muted small">Server</p>
-                    <h3>{shortenServerId(server.serverId)}</h3>
-                  </div>
-                  <div className="server-card-grid-actions">
-                    <div className="pill">{totalPlayers} players</div>
-                    {getJoinUrl(server) ? (
-                      <a
-                        className="join-button"
-                        href={getJoinUrl(server) ?? "#"}
+              <div className="server-card-grid-header">
+                <div>
+                  <p className="muted small">Server</p>
+                  <h3>{shortenServerId(server.serverId)}</h3>
+                </div>
+                <div className="server-card-grid-actions">
+                  {canModerateServers && (
+                    <button
+                      className="view-map"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setModServerId(server.serverId);
+                        setModServerName(shortenServerId(server.serverId));
+                      }}
+                    >
+                      Tools
+                    </button>
+                  )}
+                  <div className="pill">{totalPlayers} players</div>
+                  {getJoinUrl(server) ? (
+                    <a
+                      className="join-button"
+                      href={getJoinUrl(server) ?? "#"}
                         onClick={(e) => e.stopPropagation()}
                       >
                         Join
@@ -147,6 +165,12 @@ const ServersPage: React.FC = () => {
           })}
         </div>
       )}
+      <ServerModerationModal
+        isOpen={modServerId !== null}
+        onClose={() => setModServerId(null)}
+        serverId={modServerId ?? ""}
+        serverName={modServerName}
+      />
     </AppShell>
   );
 };
