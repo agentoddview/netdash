@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? import.meta.env.VITE_API_URL;
 
@@ -34,30 +34,24 @@ export function usePlayerDetail(robloxUserId: string | number | undefined): {
   const [data, setData] = useState<PlayerDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const idRef = useRef(robloxUserId);
 
   const fetchDetail = useCallback(
-    async (signal?: AbortSignal) => {
+    async (id: string | number, signal?: AbortSignal) => {
       setLoading(true);
       setError(null);
-      const id = idRef.current;
-      if (!id) {
-        setError("Missing player id");
-        setLoading(false);
-        return;
-      }
-
       try {
         const res = await fetch(`${API_BASE}/players/${id}`, { signal, credentials: "include" });
         if (!res.ok) {
-          throw new Error("Failed to load player");
+          const text = await res.text();
+          throw new Error(text || `Request failed with status ${res.status}`);
         }
         const json = (await res.json()) as PlayerDetail;
         if (signal?.aborted) return;
         setData(json);
       } catch (err) {
         if (signal?.aborted) return;
-        setError(err instanceof Error ? err.message : "Failed to load player");
+        console.error("usePlayerDetail error", err);
+        setError(err instanceof Error ? err.message : "Unknown error");
         setData(null);
       } finally {
         if (signal?.aborted) return;
@@ -68,16 +62,17 @@ export function usePlayerDetail(robloxUserId: string | number | undefined): {
   );
 
   useEffect(() => {
-    idRef.current = robloxUserId;
+    if (robloxUserId == null) return;
     const controller = new AbortController();
-    void fetchDetail(controller.signal);
+    void fetchDetail(robloxUserId, controller.signal);
     return () => controller.abort();
   }, [robloxUserId, fetchDetail]);
 
   const refetch = useCallback(async () => {
+    if (robloxUserId == null) return;
     const controller = new AbortController();
-    await fetchDetail(controller.signal);
-  }, [fetchDetail]);
+    await fetchDetail(robloxUserId, controller.signal);
+  }, [fetchDetail, robloxUserId]);
 
   return { data, loading, error, refetch };
 }

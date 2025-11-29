@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? import.meta.env.VITE_API_URL;
 
@@ -24,29 +24,32 @@ export function usePlayersSearch(query: string): {
   const [data, setData] = useState<PlayerSummary[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const latestQuery = useRef(query);
 
   const fetchPlayers = useCallback(
-    async (signal?: AbortSignal) => {
+    async (q: string, signal?: AbortSignal) => {
       setLoading(true);
       setError(null);
-      const searchTerm = latestQuery.current.trim();
-      const url =
-        searchTerm.length > 0
-          ? `${API_BASE}/players/search?q=${encodeURIComponent(searchTerm)}`
-          : `${API_BASE}/players/search`;
-
+      const params = q.trim() ? `?q=${encodeURIComponent(q.trim())}` : "";
       try {
-        const res = await fetch(url, { signal, credentials: "include" });
+        const res = await fetch(`${API_BASE}/players/search${params}`, {
+          signal,
+          credentials: "include",
+        });
         if (!res.ok) {
-          throw new Error("Failed to load players");
+          const text = await res.text();
+          throw new Error(text || `Request failed with status ${res.status}`);
         }
-        const json = (await res.json()) as PlayerSummary[];
+        const json = (await res.json()) as PlayerSummary[] | { players?: PlayerSummary[] };
         if (signal?.aborted) return;
-        setData(json);
+        if (Array.isArray(json)) {
+          setData(json);
+        } else {
+          setData(json.players ?? []);
+        }
       } catch (err) {
         if (signal?.aborted) return;
-        setError(err instanceof Error ? err.message : "Failed to load players");
+        console.error("usePlayersSearch error", err);
+        setError(err instanceof Error ? err.message : "Unknown error");
         setData(null);
       } finally {
         if (signal?.aborted) return;
@@ -57,22 +60,15 @@ export function usePlayersSearch(query: string): {
   );
 
   useEffect(() => {
-    latestQuery.current = query;
     const controller = new AbortController();
-    const timer = setTimeout(() => {
-      void fetchPlayers(controller.signal);
-    }, 300);
-
-    return () => {
-      clearTimeout(timer);
-      controller.abort();
-    };
+    void fetchPlayers(query, controller.signal);
+    return () => controller.abort();
   }, [query, fetchPlayers]);
 
   const refetch = useCallback(async () => {
     const controller = new AbortController();
-    await fetchPlayers(controller.signal);
-  }, [fetchPlayers]);
+    await fetchPlayers(query, controller.signal);
+  }, [fetchPlayers, query]);
 
   return { data, loading, error, refetch };
 }
