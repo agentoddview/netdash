@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-const API_BASE = import.meta.env.VITE_API_URL;
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? import.meta.env.VITE_API_URL;
 
 export interface PlayerDetail {
   robloxUserId: number;
@@ -25,7 +25,7 @@ export interface PlayerDetail {
   } | null;
 }
 
-export function usePlayerDetail(robloxUserId: string | number): {
+export function usePlayerDetail(robloxUserId: string | number | undefined): {
   data: PlayerDetail | null;
   loading: boolean;
   error: string | null;
