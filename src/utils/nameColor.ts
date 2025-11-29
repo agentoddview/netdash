@@ -20,7 +20,6 @@ export function nameColorForPlayer(opts: {
   }
 
   const r = (role || "").toLowerCase();
-  if (r.includes("transit police")) return "#4da6ff";
   if (r.includes("staff")) return "#a970ff";
 
   return undefined;
