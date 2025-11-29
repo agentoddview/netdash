@@ -1,24 +1,34 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import blank from "../assets/blank.svg";
 
-interface AvatarProps {
-  src: string;
+interface Props {
+  src?: string | null;
   alt: string;
   className?: string;
   style?: React.CSSProperties;
 }
 
-export const Avatar: React.FC<AvatarProps> = ({ src, alt, className, style }) => {
-  const [error, setError] = useState(false);
+export const Avatar: React.FC<Props> = ({ src, alt, className, style }) => {
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    setFailed(false);
+  }, [src]);
+
+  const actualSrc = !src || failed ? blank : src;
 
   return (
     <img
-      src={error ? blank : src}
+      src={actualSrc}
       alt={alt}
       className={className}
-      onError={() => setError(true)}
-      referrerPolicy="no-referrer"
       style={style}
+      onError={() => {
+        if (src) {
+          setFailed(true);
+        }
+      }}
+      referrerPolicy="no-referrer"
     />
   );
 };
