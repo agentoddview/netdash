@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AppShell from "./components/AppShell";
+import { Avatar } from "./components/Avatar";
 import { globalStyles } from "./dashboard";
 import { usePlayersSearch, type PlayerSummary } from "./hooks/usePlayersSearch";
 import { useAvatar } from "./hooks/useAvatar";
@@ -44,7 +45,7 @@ const PlayerListItem: React.FC<PlayerListItemProps> = ({ player, onClick }) => {
       }}
     >
       <div className="player-main">
-        <img src={avatarUrl ?? ""} alt={`${player.displayName} avatar`} className="avatar" />
+        <Avatar src={avatarUrl ?? ""} alt={`${player.displayName} avatar`} className="avatar" />
         <div>
           <div className="username-link" style={color ? { color } : undefined}>
             {player.displayName}

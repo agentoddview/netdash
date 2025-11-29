@@ -4,6 +4,7 @@ import LiveMap from "./LiveMap";
 import { ModActionButton } from "./components/moderation/ModActionButton";
 import AppShell from "./components/AppShell";
 import { nameColorForPlayer } from "./utils/nameColor";
+import { Avatar } from "./components/Avatar";
 
 type Summary = {
   onlineTotal: number;
@@ -446,11 +447,11 @@ const DashboardPage: React.FC = () => {
                               }
                             >
                               <div className="player-main">
-                                <img
-                                  src={avatarUrl(player.userId)}
-                                  alt={`${player.username} avatar`}
-                                  className="avatar"
-                                />
+                                  <Avatar
+                                    src={avatarUrl(player.userId)}
+                                    alt={`${player.username} avatar`}
+                                    className="avatar"
+                                  />
                                 <div>
                                   <a
                                     href={profileUrl(player.userId)}

@@ -3,6 +3,7 @@ import type { Player } from "./dashboard";
 import { getStaffHighlight } from "./dashboard";
 import { ModActionButton } from "./components/moderation/ModActionButton";
 import { nameColorForPlayer } from "./utils/nameColor";
+import { Avatar } from "./components/Avatar";
 
 type PlayerRowProps = {
   player: Player;
@@ -35,7 +36,7 @@ const PlayerRow: React.FC<PlayerRowProps> = ({
       onClick={onSelect}
     >
       <div className="player-main">
-        <img src={avatarUrl(player.userId)} alt={`${player.username} avatar`} className="avatar" />
+        <Avatar src={avatarUrl(player.userId)} alt={`${player.username} avatar`} className="avatar" />
         <div>
           <a
             href={profileUrl(player.userId)}

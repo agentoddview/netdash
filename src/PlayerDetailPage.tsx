@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import AppShell from "./components/AppShell";
 import LiveMap from "./LiveMap";
+import { Avatar } from "./components/Avatar";
 import { globalStyles, type Player, type Server } from "./dashboard";
 import { usePlayerDetail } from "./hooks/usePlayerDetail";
 import { useAvatar } from "./hooks/useAvatar";
@@ -154,7 +155,7 @@ const PlayerDetailPage: React.FC = () => {
       <section className="panel">
         <div className="panel-header" style={{ alignItems: "center" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            <img
+            <Avatar
               src={avatarUrl ?? ""}
               alt={`${data.displayName} avatar`}
               className="avatar"
