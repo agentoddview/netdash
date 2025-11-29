@@ -3,6 +3,7 @@ import { useAuth, type AuthUser } from "./AuthGate";
 import LiveMap from "./LiveMap";
 import { ModActionButton } from "./components/moderation/ModActionButton";
 import AppShell from "./components/AppShell";
+import { nameColorForPlayer } from "./utils/nameColor";
 
 type Summary = {
   onlineTotal: number;
@@ -108,25 +109,26 @@ export const getRoleFromRank = (rank?: string | number | null): string | null =>
 
 export const getStaffHighlight = (rank?: string | null): { color?: string; icon?: string } => {
   const role = getRoleFromRank(rank);
-  if (!role) return {};
+  const color = nameColorForPlayer({ groupRank: rank ? Number(rank) : undefined, role });
+  if (!role) return { color };
 
   if (role === "Administration" || role === "Founder") {
-    return { color: "#ef4444", icon: "👑" };
+    return { color: color ?? "#ef4444", icon: "👑" };
   }
   if (role === "Chief of Staff") {
-    return { color: "#38bdf8", icon: "👔" };
+    return { color: color ?? "#38bdf8", icon: "👔" };
   }
   if (role === "Developer") {
-    return { color: "#f97316", icon: "🔧" };
+    return { color: color ?? "#f97316", icon: "🔧" };
   }
   if (role === "Lead Supervisor") {
-    return { color: "#22c55e", icon: "🛡" };
+    return { color: color ?? "#22c55e", icon: "🛡" };
   }
   if (role === "Supervisor") {
-    return { color: "#22c55e", icon: "🛡" };
+    return { color: color ?? "#22c55e", icon: "🛡" };
   }
 
-  return {};
+  return { color };
 };
 
 const DashboardPage: React.FC = () => {

@@ -11,6 +11,7 @@ export interface PlayerDetail {
   lastCash: number;
   lastSeenAt: string;
   isOnline: boolean;
+  hasAccount: boolean;
   currentServer: {
     id: string;
     placeId: number;
@@ -63,10 +64,25 @@ export function usePlayerDetail(robloxUserId: string | number | undefined): {
 
   useEffect(() => {
     if (robloxUserId == null) return;
-    const controller = new AbortController();
-    void fetchDetail(robloxUserId, controller.signal);
-    return () => controller.abort();
-  }, [robloxUserId, fetchDetail]);
+    let cancelled = false;
+
+    const run = async () => {
+      if (robloxUserId == null || cancelled) return;
+      const controller = new AbortController();
+      await fetchDetail(robloxUserId, controller.signal);
+    };
+
+    void run();
+    const interval = setInterval(() => {
+      void run();
+    }, 5000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [robloxUserId]);
 
   const refetch = useCallback(async () => {
     if (robloxUserId == null) return;

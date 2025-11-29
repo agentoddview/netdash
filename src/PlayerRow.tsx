@@ -2,6 +2,7 @@ import React from "react";
 import type { Player } from "./dashboard";
 import { getStaffHighlight } from "./dashboard";
 import { ModActionButton } from "./components/moderation/ModActionButton";
+import { nameColorForPlayer } from "./utils/nameColor";
 
 type PlayerRowProps = {
   player: Player;
@@ -22,7 +23,10 @@ const PlayerRow: React.FC<PlayerRowProps> = ({
   onSelect,
   selectedRef,
 }) => {
-  const { color: usernameColor, icon: roleIcon } = getStaffHighlight(player.rank);
+  const { color: highlightColor, icon: roleIcon } = getStaffHighlight(player.rank);
+  const nameColor =
+    nameColorForPlayer({ groupRank: player.rank ? Number(player.rank) : undefined, role: player.role }) ||
+    highlightColor;
 
   return (
     <div
@@ -38,7 +42,7 @@ const PlayerRow: React.FC<PlayerRowProps> = ({
             target="_blank"
             rel="noreferrer"
             className="username-link"
-            style={usernameColor ? { color: usernameColor } : undefined}
+            style={nameColor ? { color: nameColor } : undefined}
           >
             {roleIcon && (
               <span className="role-icon" aria-hidden="true">

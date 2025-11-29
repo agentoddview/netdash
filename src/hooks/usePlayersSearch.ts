@@ -13,6 +13,7 @@ export interface PlayerSummary {
   isOnline: boolean;
   currentServerId: string | null;
   currentRole: string | null;
+  hasAccount: boolean;
 }
 
 export function usePlayersSearch(query: string): {

@@ -2,10 +2,12 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import AppShell from "./components/AppShell";
 import LiveMap from "./LiveMap";
-import { globalStyles, getStaffHighlight, type Player, type Server } from "./dashboard";
+import { globalStyles, type Player, type Server } from "./dashboard";
 import { usePlayerDetail } from "./hooks/usePlayerDetail";
 import { useAvatar } from "./hooks/useAvatar";
 import { useLivePlayers } from "./hooks/useLivePlayers";
+import { buildJoinUrl } from "./utils/joinUrl";
+import { groupRankLabel, nameColorForPlayer } from "./utils/nameColor";
 
 const formatPlayTime = (totalSeconds: number) => {
   if (!Number.isFinite(totalSeconds) || totalSeconds <= 0) return "0m";
@@ -123,7 +125,11 @@ const PlayerDetailPage: React.FC = () => {
     );
   }
 
-  const { color } = getStaffHighlight(String(data.groupRank));
+  const color = nameColorForPlayer({
+    groupRank: data.groupRank,
+    role: data.currentStats?.role ?? null,
+    hasAccount: data.hasAccount,
+  });
   const isOnline = data.isOnline && !!data.currentServer;
   const onlineChip = isOnline
     ? `Online - ${data.currentServer?.name || data.currentServer?.id || "-"}`
@@ -157,7 +163,18 @@ const PlayerDetailPage: React.FC = () => {
             <div>
               <h2 style={{ margin: 0, color: color ?? "inherit" }}>{data.displayName}</h2>
               <p className="muted small" style={{ marginTop: 4 }}>
-                @{data.username}
+                <a
+                  href={`https://www.roblox.com/users/${data.robloxUserId}/profile`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="username-link"
+                >
+                  @{data.username}
+                </a>
+              </p>
+              <p className="muted small">{groupRankLabel(data.groupRank)}</p>
+              <p className="muted small">
+                Dashboard account: {data.hasAccount ? "Linked" : "Not linked"}
               </p>
               <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
                 <span className="pill">Rank {data.groupRank}</span>
@@ -176,6 +193,17 @@ const PlayerDetailPage: React.FC = () => {
                     onClick={() => navigate(`/servers/${data.currentServer?.id}`)}
                   >
                     View server
+                  </button>
+                )}
+                {isOnline && data.currentServer?.placeId && data.currentServer?.jobId && (
+                  <button
+                    className="join-button"
+                    onClick={() => {
+                      const url = buildJoinUrl(data.currentServer?.placeId, data.currentServer?.jobId);
+                      if (url) window.location.href = url;
+                    }}
+                  >
+                    Join server
                   </button>
                 )}
               </div>

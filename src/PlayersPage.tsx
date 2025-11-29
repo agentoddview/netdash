@@ -1,9 +1,10 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AppShell from "./components/AppShell";
-import { globalStyles, getStaffHighlight } from "./dashboard";
+import { globalStyles } from "./dashboard";
 import { usePlayersSearch, type PlayerSummary } from "./hooks/usePlayersSearch";
 import { useAvatar } from "./hooks/useAvatar";
+import { groupRankLabel, nameColorForPlayer } from "./utils/nameColor";
 
 const formatPlayTime = (totalSeconds: number) => {
   if (!Number.isFinite(totalSeconds) || totalSeconds <= 0) return "0m";
@@ -27,7 +28,7 @@ type PlayerListItemProps = {
 
 const PlayerListItem: React.FC<PlayerListItemProps> = ({ player, onClick }) => {
   const { avatarUrl } = useAvatar(player.robloxUserId);
-  const { color } = getStaffHighlight(String(player.groupRank));
+  const color = nameColorForPlayer({ groupRank: player.groupRank, role: player.currentRole });
   const onlineChip = player.isOnline
     ? `Online - ${player.currentServerId ?? "-"}`
     : `Offline - Last seen ${formatDate(player.lastSeenAt)}`;
@@ -48,13 +49,26 @@ const PlayerListItem: React.FC<PlayerListItemProps> = ({ player, onClick }) => {
           <div className="username-link" style={color ? { color } : undefined}>
             {player.displayName}
           </div>
-          <p className="muted small">@{player.username}</p>
+          <p className="muted small">
+            <a
+              href={`https://www.roblox.com/users/${player.robloxUserId}/profile`}
+              target="_blank"
+              rel="noreferrer"
+              className="username-link"
+              style={{ fontWeight: 500 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              @{player.username}
+            </a>
+          </p>
+          <p className="muted small">{groupRankLabel(player.groupRank)}</p>
         </div>
       </div>
       <div className="player-tags" style={{ justifyContent: "flex-end" }}>
         <span className="pill">Rank {player.groupRank}</span>
         <span className="pill">Time {formatPlayTime(player.totalPlayTimeSeconds)}</span>
         <span className="pill">Cash {player.lastCash.toLocaleString()}</span>
+        <span className="pill">{player.hasAccount ? "Has dashboard account" : "No dashboard account"}</span>
         <span
           className="pill"
           style={{
