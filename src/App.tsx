@@ -6,6 +6,8 @@ import ServerDetailPage from "./ServerDetailPage";
 import AuthGate from "./AuthGate";
 import { ThemeProvider } from "./ThemeContext";
 import AdminUsersPage from "./AdminUsersPage";
+import PlayersPage from "./PlayersPage";
+import PlayerDetailPage from "./PlayerDetailPage";
 
 export default function App() {
   return (
@@ -15,6 +17,8 @@ export default function App() {
           <Route path="/" element={<DashboardPage />} />
           <Route path="/servers" element={<ServersPage />} />
           <Route path="/servers/:serverId" element={<ServerDetailPage />} />
+          <Route path="/players" element={<PlayersPage />} />
+          <Route path="/players/:robloxUserId" element={<PlayerDetailPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/admin/users" element={<AdminUsersPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />

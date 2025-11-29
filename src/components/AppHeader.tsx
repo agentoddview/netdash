@@ -4,7 +4,7 @@ import { useAuth } from "../AuthGate";
 import { useTheme } from "../ThemeContext";
 
 export type AppHeaderProps = {
-  activeTab: "main" | "servers";
+  activeTab: "main" | "servers" | "players";
   showLiveDot?: boolean;
   liveLabel?: string;
   title?: string;
@@ -36,6 +36,12 @@ const AppHeader: React.FC<AppHeaderProps> = ({ activeTab, showLiveDot = false, l
             onClick={() => navigate("/servers")}
           >
             Servers
+          </button>
+          <button
+            className={`nav-link ${activeTab === "players" ? "nav-link--active" : ""}`}
+            onClick={() => navigate("/players")}
+          >
+            Players
           </button>
         </div>
       </div>
