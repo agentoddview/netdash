@@ -64,23 +64,8 @@ export function usePlayerDetail(robloxUserId: string | number | undefined): {
 
   useEffect(() => {
     if (robloxUserId == null) return;
-    let cancelled = false;
 
-    const run = async () => {
-      if (robloxUserId == null || cancelled) return;
-      const controller = new AbortController();
-      await fetchDetail(robloxUserId, controller.signal);
-    };
-
-    void run();
-    const interval = setInterval(() => {
-      void run();
-    }, 5000);
-
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-    };
+    void fetchDetail(robloxUserId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [robloxUserId]);
 
